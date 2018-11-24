@@ -7,6 +7,11 @@ export async function getSwapInfo(httpEndpoint) {
     timeLockNumber: 30,
     depositFee: 50,
     exchangeRate: 0.98,
-    reward: 10000,
+    reward: 200,
   };
+}
+
+export async function requestInvoice({ amount, httpEndpoint }) {
+  console.log('submitting invoice request');
+  // sign the message
 }

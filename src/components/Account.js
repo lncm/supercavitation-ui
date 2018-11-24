@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import setWeb3Provider from '../web3';
+import { getAccountInfo } from '../web3';
 
 const randomMnemonic = 'drama rescue intact royal denial oblige direct vendor market soda mandate accident';
 
@@ -25,9 +25,9 @@ export default class Account extends Component {
     // do some validation...
     try {
       const { mnemonic } = this.state;
-      const getAccountInfo = await setWeb3Provider(mnemonic);
-      if (!getAccountInfo) { throw new Error('No address'); }
-      this.setState({ error: null, ...getAccountInfo });
+      const accountInfo = await getAccountInfo(mnemonic);
+      if (!accountInfo) { throw new Error('No address'); }
+      this.setState({ error: null, ...accountInfo });
     } catch (e) {
       this.setState({ error: 'Invalid Mnemonic' });
     }

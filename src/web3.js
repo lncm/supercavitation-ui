@@ -8,11 +8,12 @@ let web3;
 
 const contractAddress = SwapOffering.networks['31'].address;
 
-export async function getAccountInfo (mnemonic) {
+export async function getAccountInfo(mnemonic) {
   const provider = new HDWalletProvider(mnemonic, 'https://public-node.testnet.rsk.co', 0, 1, false, rskTestnetDerivation);
   web3 = new Web3(provider);
   const [address] = await web3.eth.getAccounts();
   const balance = await web3.eth.getBalance(address);
+
   return { address, balance };
 }
 
