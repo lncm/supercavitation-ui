@@ -6,7 +6,7 @@ export default () => {
   return (
     <Router>
       <Switch>
-        <Route path="/" component={App} exact />
+        <Route path="/" component={App} />
       </Switch>
     </Router>
   );

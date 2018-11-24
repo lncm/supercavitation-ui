@@ -11,15 +11,21 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@lncm/supercavitation-contracts": "0.0.1",
+    "babel-polyfill": "^6.26.0",
     "cross-env": "^5.2.0",
+    "prop-types": "^15.6.2",
     "react": "16.5.2",
-    "react-dom": "16.5.2",
+    "react-dom": "^16.6.3",
     "react-hot-loader": "4.3.11",
-    "react-router-dom": "4.3.0"
+    "react-router-dom": "4.3.0",
+    "truffle-hdwallet-provider": "git://github.com/trufflesuite/truffle-hdwallet-provider.git#a6f5524fbc8c973df7828bda59c61c47e51a3bec",
+    "web3": "^1.0.0-beta.36"
   },
   "devDependencies": {
     "@babel/cli": "7.1.1",
     "@babel/core": "^7.1.1",
+    "@babel/plugin-proposal-class-properties": "^7.1.0",
     "@babel/preset-env": "7.1.0",
     "@babel/preset-react": "7.0.0",
     "@babel/preset-stage-2": "7.0.0",
