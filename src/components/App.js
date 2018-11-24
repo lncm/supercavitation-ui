@@ -11,7 +11,7 @@ export default () => {
       <Account>
         <Switch>
           <Route path="/offering/:contractAddress" component={Offering} />
-          <Redirect from="/" to="/offering/0xef899220a9f3ee569e5b629b655991f8bcebe184" />
+          <Redirect from="/" to="/offering/0xa8eeafc678a66c123654695ac6217c307f8285bc" />
         </Switch>
       </Account>
     </div>

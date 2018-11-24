@@ -15,6 +15,7 @@ const config = {
 
   entry: [
     'babel-polyfill',
+    'whatwg-fetch',
     'react-hot-loader/patch',
     'webpack-dev-server/client?http://localhost:8080',
     'webpack/hot/only-dev-server',
@@ -38,12 +39,6 @@ const config = {
   },
   module: {
     rules: [
-      {
-        enforce: 'pre',
-        test: /\.jsx?$/,
-        exclude: /node_modules/,
-        loader: 'eslint-loader',
-      },
       {
         test: /\.jsx?$/,
         loaders: [

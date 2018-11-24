@@ -17,7 +17,7 @@ import InvoiceReqeust from './InvoiceRequest';
 export default class InvoiceFlow extends Component {
   constructor(props) {
     super(props);
-    this.state = { request: true };
+    this.state = { };
     this.changeSpendAmount = this.changeSpendAmount.bind(this);
     this.requestInvoice = this.requestInvoice.bind(this);
   }
@@ -28,11 +28,9 @@ export default class InvoiceFlow extends Component {
     this.setState({ request: true });
   }
   renderInput() {
-    const { lockedFunds, minAmount } = this.props;
+    const { lockedFunds, minAmount, balance } = this.props;
     // TODO use web3 bignumber
-    // fake balance
-    const maxAmount = 20000 - lockedFunds;
-    // const maxAmount = balance - lockedFunds;
+    const maxAmount = balance - lockedFunds;
     if (minAmount >= maxAmount) {
       return <div>Sorry, Not enough funds in Swap Offer</div>;
     }
@@ -42,7 +40,7 @@ export default class InvoiceFlow extends Component {
     const totalFees = reward + depositFee;
     // TODO calculate this better!
     const minimumSpend = (minAmount / exchangeRate) + totalFees;
-    const maximumSpend = (maxAmount / exchangeRate) - (reward);
+    const maximumSpend = (maxAmount / exchangeRate) - totalFees;
     const actualReceive = exchangeAmount - totalFees;
     return (
       <div>
@@ -54,7 +52,7 @@ export default class InvoiceFlow extends Component {
           value={spendAmount}
           onChange={this.changeSpendAmount}
         />
-        {(minimumSpend > spendAmount || maximumSpend < spendAmount)
+        {!spendAmount || (minimumSpend > spendAmount || maximumSpend < spendAmount)
           ? <div>Enter an amount between {minimumSpend} and {maximumSpend}</div>
           : <button type="submit" onClick={this.requestInvoice}>Request Invoice</button>
         }

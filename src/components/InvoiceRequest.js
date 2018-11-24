@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
+import QRCode from 'qrcode.react';
 
-import { requestInvoice } from '../http';
+import { requestSmallInvoice, requestFullInvoice, awaitMainPayment } from '../http';
+import { awaitSwapStatus } from '../web3';
+
+import Timeout from './Timeout';
 
 // 0. Input amount you wish to get...
 //
@@ -14,40 +18,88 @@ import { requestInvoice } from '../http';
 //
 // 6. Show UI to claim funds if not
 
-const testProps = {
-  spendAmount: '2344',
-  request: true,
-  contractAddress: '0xef899220a9f3ee569e5b629b655991f8bcebe184',
-  httpEndpoint: 'http://localhost:8000',
-  owner: '0x0f18cd0F5B7CcE9d6DCC246F80B0fCdd7a2AF150',
-  lockedFunds: '0',
-  balance: '0',
-  text: "Hello, I'm Bob. I would never scam you. Trust me ;).",
-  minAmount: 1000,
-  timeLockNumber: 30,
-  depositFee: 50,
-  exchangeRate: 0.98,
-  reward: 200,
-};
-
 export default class InvoiceRequest extends Component {
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = { };
   }
   componentDidMount() {
-    
+    this.processInvoices();
   }
-  async requestInvoice() {
-    const thing = await requestInvoice({ contractAddress, spenAmount, });
-    this.setState({ test: 1 });
+  async processInvoices() {
+    const { spendAmount, httpEndpoint, contractAddress } = this.props;
+    // request + make the deposit
+    const { msg: { invoice, hash: smallHash } } = await requestSmallInvoice({ httpEndpoint, spendAmount });
+    this.setState({ invoice });
+    // payment is made, get the big invoice
+    const { txid, msg: { invoice: fullInvoice, hash: fullHash } } = await requestFullInvoice({ smallHash, httpEndpoint });
+    // show confirmation of payment + tx sending
+    this.setState({ mining: true, txid, invoice: fullInvoice, fullHash });
+    // poll for the tx to be mined
+    const { latestBlock, customer, reward, amount, cancelBlockHeight } = await awaitSwapStatus({ fullHash, contractAddress });
+    // show status of the mined invoice
+    this.setState({ latestBlock, customer, reward, amount, cancelBlockHeight, mining: false });
+    // check if bob has made a transaction, and/or poll myself...
+    const { txid: finalTx, timeout } = await awaitMainPayment({ httpEndpoint, fullHash });
+    // show the status of bob's transaction or it timed out...
+    this.setState({ finalTx, timeout });
+    // one more manual fallback, to confirm it's completed
+    const completedState = await awaitSwapStatus({ fullHash, contractAddress });
+    // set completed to true if it didn't time out, it muts be done...
+    const complete = !completedState.timeout;
+    // we're done, but need to deal with timeout
+    this.setState({ ...completedState, complete, timeout: !complete });
+  }
+  renderTimeout() {
+    // TODO perhaps redirect to a URL that can be resolved?
+    const { fullHash, contractAddress } = this.state;
+    return <Timeout {...{ fullHash, contractAddress }} />;
+  }
+  renderComplete() {
+    // TODO show status + updated balance
+    return <div>Swap Complete!</div>;
   }
   render() {
-    const { spendAmount } = testProps;
+    const { invoice, txid, finalTx, mining, amount, timeout, complete, cancelBlockHeight, latestBlock } = this.state;
+    if (timeout) { return this.renderTimeout(); }
+    if (complete) { return this.renderCoplete(); }
+    const uri = `lightning:${invoice}`;
     return (
       <div>
-        Requesting invoice for {spendAmount}...
-
+        {finalTx
+          && (
+          <div>
+          Other party has submitted the swap settlement
+            <a href={`https://explorer.testnet.rsk.co/tx/${finalTx}`} target="_blank">
+              {finalTx.slice(0, 10)}...
+            </a>
+            <br />
+          Please wait a few minutes for it to confirm...
+          </div>
+          )
+          }
+        {(amount && !finalTx)
+        && (
+          <div>
+          Swap Confirmed pay the invoice to receive <b>{amount}</b> RSK within {cancelBlockHeight - latestBlock} blocks...
+          </div>
+        )}
+        <pre>{JSON.stringify(this.state, null, 2)}</pre>
+        {txid && (
+        <div>
+          {mining ? 'Mining' : 'Mined'} Transaction{' '}
+          <a href={`https://explorer.testnet.rsk.co/tx/${txid}`} target="_blank">
+            {txid.slice(0, 10)}...
+          </a>!
+        </div>
+        )}
+        {(invoice && !mining) && (
+        <div>
+          <QRCode value={uri} renderAs="svg" style={{ width: '100%', height: 'auto', maxHeight: '50vh' }} />
+          <br />
+          URI {uri};
+        </div>
+        )}
       </div>
     );
   }
