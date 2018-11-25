@@ -4,6 +4,7 @@ import SwapOffering from '@lncm/supercavitation-contracts/build/contracts/SwapOf
 
 import { base64toHex } from './util';
 
+const gasPrice = 1;
 const rskTestnetDerivation = "m/44'/37310'/0'/0/";
 
 let web3;
@@ -45,7 +46,6 @@ export async function getContractInfo(address) {
   return { httpEndpoint, owner, lockedFunds, balance };
 }
 
-
 export async function awaitSwapStatus({ contractAddress, fullHash, completionTimeout }) {
   // TODO cancel poll, etc..
   const hash = base64toHex(fullHash);
@@ -74,4 +74,37 @@ export async function awaitSwapStatus({ contractAddress, fullHash, completionTim
     }
     poll();
   });
+}
+
+export function monitorSwap({ preImageHash, contractAddress, updateState }) {
+  const contract = getContract(contractAddress);
+  const hash = `0x${preImageHash}`;
+  const poller = {
+    async poll() {
+      if (!this.stopped) {
+        try {
+          const pollData = await contract.methods.getSwap(hash).call();
+          updateState({ ...pollData });
+        } catch (err) {
+          updateState({ err });
+          this.stop();
+          return;
+        }
+        await new Promise(r => setTimeout(r, 5000));
+      }
+    },
+    stop() {
+      console.log('stopping polling');
+      this.polling = false;
+    },
+  };
+  poller.poll();
+  return poller;
+}
+
+export async function claimFunds({ contractAddress, preImage, preImageHash }) {
+  const contract = getContract(contractAddress);
+  const from = await getAddress();
+  const { tx: txid } = await contract.methods.completeSwap(`0x${preImageHash}`, `0x${preImage}`).send({ from, gasPrice });
+  return txid;
 }

@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import InvoiceReqeust from './InvoiceRequest';
+import InvoiceProcessing from './InvoiceProcessing';
 
 // 0. Input amount you wish to get...
 //
@@ -17,7 +17,7 @@ import InvoiceReqeust from './InvoiceRequest';
 export default class InvoiceFlow extends Component {
   constructor(props) {
     super(props);
-    this.state = { };
+    this.state = { request: true };
     this.changeSpendAmount = this.changeSpendAmount.bind(this);
     this.requestInvoice = this.requestInvoice.bind(this);
   }
@@ -85,7 +85,7 @@ export default class InvoiceFlow extends Component {
   render() {
     const { request } = this.state;
     if (request) {
-      return <InvoiceReqeust {...this.state} {...this.props} />;
+      return <InvoiceProcessing {...this.state} {...this.props} />;
     }
     return this.renderInput();
   }

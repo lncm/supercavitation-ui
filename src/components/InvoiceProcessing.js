@@ -18,13 +18,14 @@ import Timeout from './Timeout';
 //
 // 6. Show UI to claim funds if not
 
-export default class InvoiceRequest extends Component {
+export default class InvoiceProcessing extends Component {
   constructor(props) {
     super(props);
-    this.state = { };
+    this.state = { timeout: true };
   }
   componentDidMount() {
-    this.processInvoices();
+    // TODO uncomment
+    // this.processInvoices();
   }
   async processInvoices() {
     const { spendAmount, httpEndpoint, contractAddress } = this.props;
@@ -52,7 +53,8 @@ export default class InvoiceRequest extends Component {
   }
   renderTimeout() {
     // TODO perhaps redirect to a URL that can be resolved?
-    const { fullHash, contractAddress } = this.state;
+    const { fullHash } = this.state;
+    const { contractAddress } = this.props;
     return <Timeout {...{ fullHash, contractAddress }} />;
   }
   renderComplete() {
