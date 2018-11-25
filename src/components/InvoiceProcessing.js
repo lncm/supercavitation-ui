@@ -1,31 +1,21 @@
 import React, { Component } from 'react';
 import QRCode from 'qrcode.react';
+import { Callout } from '@blueprintjs/core';
 
+import { explorerUrl } from '../util';
 import { requestSmallInvoice, requestFullInvoice, awaitMainPayment } from '../http';
 import { awaitSwapStatus } from '../web3';
 
 import Timeout from './Timeout';
 
-// 0. Input amount you wish to get...
-//
-// 1. make request to bob to get invoice, sign the message
-// 2. show the deposit payment invoice
-// 3. wait for response (tx id)
-//
-// 4. Repat 1-3 for main invoice
-//
-// 5. See if bob automatically claims the rewards (timeout
-//
-// 6. Show UI to claim funds if not
-
 export default class InvoiceProcessing extends Component {
   constructor(props) {
     super(props);
-    this.state = { timeout: true };
+    // this.state = { timeout: true };
+    this.state = { };
   }
   componentDidMount() {
-    // TODO uncomment
-    // this.processInvoices();
+    this.processInvoices();
   }
   async processInvoices() {
     const { spendAmount, httpEndpoint, contractAddress } = this.props;
@@ -72,7 +62,7 @@ export default class InvoiceProcessing extends Component {
           && (
           <div>
           Other party has submitted the swap settlement
-            <a href={`https://explorer.testnet.rsk.co/tx/${finalTx}`} target="_blank">
+            <a href={`${explorerUrl}/tx/${finalTx}`} target="_blank">
               {finalTx.slice(0, 10)}...
             </a>
             <br />
@@ -86,7 +76,6 @@ export default class InvoiceProcessing extends Component {
           Swap Confirmed pay the invoice to receive <b>{amount}</b> RSK within {cancelBlockHeight - latestBlock} blocks...
           </div>
         )}
-        <pre>{JSON.stringify(this.state, null, 2)}</pre>
         {txid && (
         <div>
           {mining ? 'Mining' : 'Mined'} Transaction{' '}
@@ -97,9 +86,13 @@ export default class InvoiceProcessing extends Component {
         )}
         {(invoice && !mining) && (
         <div>
-          <QRCode value={uri} renderAs="svg" style={{ width: '100%', height: 'auto', maxHeight: '50vh' }} />
-          <br />
-          URI {uri};
+          <Callout title="Scan To Pay">
+            <p>You will pay xxx for xxx</p>
+            <QRCode value={uri} renderAs="svg" style={{ width: '100%', height: 'auto', maxHeight: '50vh' }} />
+            <Callout style={{ overflowY: 'scroll' }}>
+              {uri}
+            </Callout>
+          </Callout>
         </div>
         )}
       </div>

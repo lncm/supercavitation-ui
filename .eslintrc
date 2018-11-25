@@ -24,6 +24,7 @@
     "import/prefer-default-export": "off",
     "class-methods-use-this": "off",
     "max-len": 0,
-    "react/jsx-no-target-blank": 0
+    "react/jsx-no-target-blank": 0,
+    "react/destructuring-assignment": 0
   }
 }

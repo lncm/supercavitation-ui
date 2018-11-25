@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Button, Callout, NumericInput } from '@blueprintjs/core';
 
 import InvoiceProcessing from './InvoiceProcessing';
 
@@ -17,12 +18,12 @@ import InvoiceProcessing from './InvoiceProcessing';
 export default class InvoiceFlow extends Component {
   constructor(props) {
     super(props);
-    this.state = { request: true };
+    this.state = { };
     this.changeSpendAmount = this.changeSpendAmount.bind(this);
     this.requestInvoice = this.requestInvoice.bind(this);
   }
-  changeSpendAmount({ target }) {
-    this.setState({ spendAmount: target.value });
+  changeSpendAmount(amount) {
+    this.setState({ spendAmount: amount });
   }
   requestInvoice() {
     this.setState({ request: true });
@@ -32,54 +33,51 @@ export default class InvoiceFlow extends Component {
     // TODO use web3 bignumber
     const maxAmount = balance - lockedFunds;
     if (minAmount >= maxAmount) {
-      return <div>Sorry, Not enough funds in Swap Offer</div>;
+      return (
+        <Callout title="Sorry" intent="warning" icon="cross">
+          There aren't enough funds in in this swap contract to request an order
+        </Callout>
+      );
     }
     const { reward, exchangeRate, timeLockNumber, depositFee } = this.props;
     const { spendAmount } = this.state;
-    const exchangeAmount = exchangeRate * spendAmount;
+    const exchangeAmount = Math.round(exchangeRate * spendAmount);
     const totalFees = reward + depositFee;
     // TODO calculate this better!
-    const minimumSpend = (minAmount / exchangeRate) + totalFees;
-    const maximumSpend = (maxAmount / exchangeRate) - totalFees;
+    const minimumSpend = Math.ceil((minAmount / exchangeRate) + totalFees);
+    const maximumSpend = Math.floor((maxAmount / exchangeRate) - totalFees);
     const actualReceive = exchangeAmount - totalFees;
+    const badAmount = !spendAmount || (minimumSpend > spendAmount || maximumSpend < spendAmount);
     return (
-      <div>
-        <input
+      <Callout title="Request Invoice" intent="primary" icon="cell-tower">
+        <NumericInput
           placeholder="Enter Amount"
           min={minimumSpend}
           max={maximumSpend}
           type="number"
+          large
+          leftIcon="exchange"
+          stepSize={1}
           value={spendAmount}
-          onChange={this.changeSpendAmount}
+          fill
+          allowNumericCharactersOnly
+          intent="primary"
+          onValueChange={this.changeSpendAmount}
         />
-        {!spendAmount || (minimumSpend > spendAmount || maximumSpend < spendAmount)
-          ? <div>Enter an amount between {minimumSpend} and {maximumSpend}</div>
-          : <button type="submit" onClick={this.requestInvoice}>Request Invoice</button>
+        <div style={{ paddingBottom: '0.5em' }} />
+        {badAmount
+          ? <div>Enter an integer between {minimumSpend} and {maximumSpend}</div>
+          : <Button large fill intent="primary" icon="tick-circle" type="submit" onClick={this.requestInvoice} text="Submit" />
         }
-        {spendAmount
-        && (
-          <div>
-            <pre>
-              {
-            JSON.stringify({
-              exchangeRate,
-              exchangeAmount,
-              timeLockNumber,
-              actualReceive,
-              minimumSpend,
-              maximumSpend,
-            }, null, 2)
-          }
-            </pre>
-        Fees = {depositFee} + {reward} = {totalFees}
-            <br />
-        Spend = {spendAmount}
-            <br />
-        Receive = {actualReceive}
-          </div>
-
+        {!badAmount && (
+        <ul>
+          <li>Fee are {depositFee} + {reward} = <b>{totalFees}</b></li>
+          <li>You spend <b>{spendAmount}</b></li>
+          <li>Receive <b>{actualReceive}</b></li>
+          <li>You'll have to pay within <b>{timeLockNumber} blocks</b></li>
+        </ul>
         )}
-      </div>
+      </Callout>
     );
   }
   render() {

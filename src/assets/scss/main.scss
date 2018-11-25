@@ -1,5 +1,28 @@
-$color: #262828;
+@import "~@blueprintjs/core/lib/css/blueprint.css";
+@import "~@blueprintjs/icons/lib/css/blueprint-icons.css";
 
-body {
-  color: $color;
+$mobileBp: 650px;
+
+.container {
+  max-width: 700px;
+  margin: auto;
+}
+
+.content{
+  margin-top: 1em;
+}
+
+.trunchate {
+  max-width: 300px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  > div {
+    width: 50%;
+  }
 }

@@ -35,3 +35,5 @@ export function sha256(str) {
     return hex(hash);
   });
 }
+
+export const explorerUrl = 'https://explorer.testnet.rsk.co';

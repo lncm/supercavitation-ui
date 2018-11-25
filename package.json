@@ -11,6 +11,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@blueprintjs/core": "^3.9.0",
     "@lncm/supercavitation-contracts": "0.0.3",
     "babel-polyfill": "^6.26.0",
     "cross-env": "^5.2.0",
