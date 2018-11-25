@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Button, Callout, Text, TextArea } from '@blueprintjs/core';
 
 import { sha256 } from '../util';
 import { monitorSwap, claimFunds } from '../web3';
@@ -64,17 +65,15 @@ export default class Timeout extends Component {
     if (claiming) { return this.renderClaiming(); }
     const canClaim = amount > 0 && state === '0';
     return (
-      <div>
-        Your contract timed out, but do not fear!
-        <br />
-        <textarea placeholder="Paste payment hash here" onChange={this.onChange} />
+      <Callout title="Your contract timed out, but do not fear!">
+        <p>Paste your pre-image below to securely recover your funds</p>
+        <Text onChange={this.changeInput} />
+        <TextArea large fill onChange={this.changeInput} />
         <br />
         {amount === '0' && <div>Sorry, it the preImage is not recognised...</div>}
         {state && state !== '0' && <div>Swap has been completed already</div>}
-        {canClaim && <button type="submit" onClick={this.claimFunds}>Valid preImage - Claim {amount} RBCT</button>}
-        <hr />
-        <pre>{JSON.stringify({ ...this.props, ...this.state }, null, 2)}</pre>
-      </div>
+        {canClaim && <Button type="submit" onClick={this.claimFunds}>Valid preImage - Claim {amount} RBCT</Button>}
+      </Callout>
     );
   }
 }

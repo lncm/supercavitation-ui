@@ -2,8 +2,6 @@ import Web3 from 'web3';
 import HDWalletProvider from 'truffle-hdwallet-provider';
 import SwapOffering from '@lncm/supercavitation-contracts/build/contracts/SwapOffering.json';
 
-import { base64toHex } from './util';
-
 const gasPrice = 1;
 const rskTestnetDerivation = "m/44'/37310'/0'/0/";
 
@@ -48,7 +46,8 @@ export async function getContractInfo(address) {
 
 export async function awaitSwapStatus({ contractAddress, fullHash, completionTimeout }) {
   // TODO cancel poll, etc..
-  const hash = base64toHex(fullHash);
+
+  const hash = `0x${new Buffer(fullHash, 'base64').toString('hex')}`;
   const contract = getContract(contractAddress);
   return new Promise(async (resolve) => {
     async function poll() {
@@ -57,14 +56,16 @@ export async function awaitSwapStatus({ contractAddress, fullHash, completionTim
         setTimeout(() => resolve({ timeout: true }), completionTimeout);
       }
       try {
+        console.log('geteting', hash);
         const pollData = await contract.methods.getSwap(hash).call();
         const latestBlock = await web3.eth.getBlockNumber();
         console.log('got latest', pollData, latestBlock);
         // if completionTimeout is set, only resolve if status isn't 0
         if (completionTimeout && pollData.status === '0') {
           console.log('contract not resolved yet, trying again...');
-        } else {
-          resolve({ ...pollData, latestBlock });
+        }
+        if (pollData.amount != '0') {
+          return resolve({ ...pollData, latestBlock });
         }
       } catch (e) {
         console.log('not mined, trying again...', e);
@@ -107,4 +108,18 @@ export async function claimFunds({ contractAddress, preImage, preImageHash }) {
   const from = await getAddress();
   const { tx: txid } = await contract.methods.completeSwap(`0x${preImageHash}`, `0x${preImage}`).send({ from, gasPrice });
   return txid;
+}
+
+export async function awaitTxMined({ txid }) {
+  return new Promise((resolve) => {
+    async function poll() {
+      const tx = await web3.eth.getTransaction(txid);
+      if (tx.blockNumber) {
+        return resolve(tx);
+      }
+      await new Promise(r => setTimeout(r, 5000));
+      poll();
+    }
+    poll();
+  });
 }

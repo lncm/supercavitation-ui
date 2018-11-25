@@ -15,13 +15,15 @@ export async function requestSmallInvoice({ spendAmount, httpEndpoint }) {
 // const response = { msg: { invoice: 'lntb23440n1pdln8gppp5urrsqe3zhweddluwz322pfnanf7xkuwnapays4zqfr3xg2kykk6qdqqcqzyspxkmcgax9enremqrcaza7dngpj0ctcnmyvssw60u6cgu6ne6964pwt0ywf36r3cezlz0u3l6dy27c0ueux5svn8fe68w4awx78ccjeqq2d7072', hash: '4McAZiK7stb/jhRUoKZ9mnxrcdPoekhUQEjiZCrEtbQ=' }, txid: '0xfc08e572782e95c4a7047ec32c6de5e877f2ee7377427e84a1f0831f7ab71e4e' };
 export async function requestFullInvoice({ smallHash, httpEndpoint }) {
   const uri = `${httpEndpoint}/fullInvoice`;
-  return (fetch(uri, { method: 'POST', body: JSON.stringify({ smallHash }) })).json();
+  return (await fetch(uri, { method: 'POST', body: JSON.stringify({ smallHash }) })).json();
+  // return response;
 }
 
 export async function awaitMainPayment({ httpEndpoint, fullHash }) {
   const uri = `${httpEndpoint}/checkPayment`;
   return new Promise(async (resolve) => {
-    setTimeout(() => resolve({ timeout: true }), 2 * 60 * 1000); // wait two minutes
+    setTimeout(() => resolve({ timeout: true }), 1 * 60 * 1000); // wait one minutes
+    console.log('oh well');
     return (await fetch(uri, { method: 'POST', body: JSON.stringify({ fullHash }) })).json();
   });
-}
+};

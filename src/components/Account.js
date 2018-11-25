@@ -69,7 +69,7 @@ export default class Account extends Component {
       <div className="container">
         <Navbar>
           <Navbar.Group align={Alignment.LEFT}>
-            <Navbar.Heading>Subcavitation Swaps</Navbar.Heading>
+            <Navbar.Heading>Supercavitation Swaps</Navbar.Heading>
           </Navbar.Group>
           <Navbar.Group align={Alignment.RIGHT}>
             {this.renderAccountBalance()}
@@ -79,7 +79,7 @@ export default class Account extends Component {
           <Switch>
             <Route path="/registry/:contractAddress" component={Registry} />
             <Route path="/offering/:contractAddress" component={Offering} />
-            <Redirect from="/offering" to="/offering/0xc0e3dc17ae44a92641bdad430f2cc5e88d58a564" />
+            <Redirect from="/offering" to="/offering/0xd3fbe74a9a1c2d1ad1794fb23a148cef60d69c5c" />
             <Redirect from="/registry" to="/registry/0x1234" />
             <Redirect from="/" to="/registry/0x1234" />
           </Switch>

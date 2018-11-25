@@ -13,7 +13,8 @@ $mobileBp: 650px;
 }
 
 .trunchate {
-  max-width: 300px;
+  max-width: 100%;
+  width: 300px;
   text-overflow: ellipsis;
   white-space: nowrap;
   display: inline-block;

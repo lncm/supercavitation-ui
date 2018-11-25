@@ -4,7 +4,7 @@ import { Callout } from '@blueprintjs/core';
 
 import { explorerUrl } from '../util';
 import { requestSmallInvoice, requestFullInvoice, awaitMainPayment } from '../http';
-import { awaitSwapStatus } from '../web3';
+import { awaitSwapStatus, awaitTxMined } from '../web3';
 
 import Timeout from './Timeout';
 
@@ -27,12 +27,13 @@ export default class InvoiceProcessing extends Component {
     // show confirmation of payment + tx sending
     this.setState({ mining: true, txid, invoice: fullInvoice, fullHash });
     // poll for the tx to be mined
-    const { latestBlock, customer, reward, amount, cancelBlockHeight } = await awaitSwapStatus({ fullHash, contractAddress });
+    await awaitTxMined({ txid });
     // show status of the mined invoice
-    this.setState({ latestBlock, customer, reward, amount, cancelBlockHeight, mining: false });
+    this.setState({ mining: false });
     // check if bob has made a transaction, and/or poll myself...
     const { txid: finalTx, timeout } = await awaitMainPayment({ httpEndpoint, fullHash });
     // show the status of bob's transaction or it timed out...
+    console.log('got final?', finalTx);
     this.setState({ finalTx, timeout });
     // one more manual fallback, to confirm it's completed
     const completedState = await awaitSwapStatus({ fullHash, contractAddress });
@@ -52,7 +53,7 @@ export default class InvoiceProcessing extends Component {
     return <div>Swap Complete!</div>;
   }
   render() {
-    const { invoice, txid, finalTx, mining, amount, timeout, complete, cancelBlockHeight, latestBlock } = this.state;
+    const { invoice, txid, finalTx, spendAmount, mining, amount, timeout, complete, cancelBlockHeight, latestBlock } = this.state;
     if (timeout) { return this.renderTimeout(); }
     if (complete) { return this.renderCoplete(); }
     const uri = `lightning:${invoice}`;
@@ -70,28 +71,35 @@ export default class InvoiceProcessing extends Component {
           </div>
           )
           }
-        {(amount && !finalTx)
-        && (
-          <div>
-          Swap Confirmed pay the invoice to receive <b>{amount}</b> RSK within {cancelBlockHeight - latestBlock} blocks...
-          </div>
-        )}
         {txid && (
-        <div>
-          {mining ? 'Mining' : 'Mined'} Transaction{' '}
-          <a href={`https://explorer.testnet.rsk.co/tx/${txid}`} target="_blank">
-            {txid.slice(0, 10)}...
-          </a>!
-        </div>
+        <Callout
+          intent={mining ? 'warning' : 'success'}
+          title={mining ? 'Mining Transaction' : 'Mined Transaction'}
+        >
+          <a className="trunchate" href={`https://explorer.testnet.rsk.co/tx/${txid}`} target="_blank">{txid}</a>
+        </Callout>
         )}
         {(invoice && !mining) && (
         <div>
-          <Callout title="Scan To Pay">
-            <p>You will pay xxx for xxx</p>
-            <QRCode value={uri} renderAs="svg" style={{ width: '100%', height: 'auto', maxHeight: '50vh' }} />
-            <Callout style={{ overflowY: 'scroll' }}>
-              {uri}
-            </Callout>
+          <Callout title="Scan or Tap To Pay">
+            {(amount && !finalTx)
+              ? (
+                <div style={{ marginBottom: '0.5em' }}>
+              Pay the invoice to receive <b>{amount}</b> RBTC
+                </div>
+              )
+              : (
+                <div style={{ marginBottom: '0.5em' }}>
+              Pay the deposit to generate a swap contract
+                </div>
+              )
+            }
+            <a href={uri}>
+              <QRCode value={uri} renderAs="svg" style={{ width: '100%', height: 'auto', maxHeight: '50vh' }} />
+              <Callout style={{ overflowY: 'scroll' }}>
+                {uri}
+              </Callout>
+            </a>
           </Callout>
         </div>
         )}
