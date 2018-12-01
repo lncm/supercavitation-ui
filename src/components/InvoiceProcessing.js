@@ -3,8 +3,8 @@ import QRCode from 'qrcode.react';
 import { Callout } from '@blueprintjs/core';
 
 import { explorerUrl } from '../util';
-import { requestSmallInvoice, requestFullInvoice, awaitMainPayment } from '../http';
-import { awaitSwapStatus, awaitTxMined } from '../web3';
+import { requestInvoices, getStatus } from '../http';
+import { monitorSwap } from '../web3';
 
 import Timeout from './Timeout';
 
@@ -17,30 +17,41 @@ export default class InvoiceProcessing extends Component {
   componentDidMount() {
     this.processInvoices();
   }
+  // TODO unmount stop polling!
   async processInvoices() {
     const { spendAmount, httpEndpoint, contractAddress } = this.props;
-    // request + make the deposit
-    const { msg: { invoice, hash: smallHash } } = await requestSmallInvoice({ httpEndpoint, spendAmount });
-    this.setState({ invoice });
-    // payment is made, get the big invoice
-    const { txid, msg: { invoice: fullInvoice, hash: fullHash } } = await requestFullInvoice({ smallHash, httpEndpoint });
-    // show confirmation of payment + tx sending
-    this.setState({ mining: true, txid, invoice: fullInvoice, fullHash });
-    // poll for the tx to be mined
-    await awaitTxMined({ txid });
-    // show status of the mined invoice
-    this.setState({ mining: false });
-    // check if bob has made a transaction, and/or poll myself...
-    const { txid: finalTx, timeout } = await awaitMainPayment({ httpEndpoint, fullHash });
-    // show the status of bob's transaction or it timed out...
-    console.log('got final?', finalTx);
-    this.setState({ finalTx, timeout });
-    // one more manual fallback, to confirm it's completed
-    const completedState = await awaitSwapStatus({ fullHash, contractAddress });
-    // set completed to true if it didn't time out, it muts be done...
-    const complete = !completedState.timeout;
-    // we're done, but need to deal with timeout
-    this.setState({ ...completedState, complete, timeout: !complete });
+    // request the invoice, show deposit if required
+    const { depositInvoice, paymentInvoice, preImageHash } = await requestInvoices({ contractAddress, httpEndpoint, spendAmount });
+    this.setState({ preImageHash, invoice: depositInvoice || paymentInvoice });
+    // lets poll the contract for the stuff we can verify ourselves
+    this.poller = await monitorSwap({
+      preImageHash,
+      contractAddress,
+      updateState: async ({ amount, state }) => {
+        if (state === '2') {
+          this.setState({ cancelled: true }); // we are done
+          this.poller.stop();
+        } else if (state === '1') {
+          this.setState({ completed: true }); // we are done
+          this.poller.stop();
+        } else if (amount > '0') {
+          // the swap is created...
+          if (!this.state.settleTx) {
+            this.setState({ invoice: paymentInvoice, mining: false });
+            const { settleTx: miningTx } = await getStatus({ httpEndpoint, preImageHash });
+            if (miningTx) {
+              // we might not have the settle tx yet... server's not synced yet? anyway, just skip this and retry
+              // either way, we need to show the timeout box here if it takes too long...
+              this.setState({ mining: true, settleTx: miningTx, miningTx });
+            }
+          }
+        } else if (!this.state.creationTx) {
+          // if we're not created yet, we should wait for the status...
+          const { creationTx: miningTx } = await getStatus({ httpEndpoint, preImageHash });
+          this.setState({ mining: true, creationTx: miningTx, miningTx });
+        }
+      },
+    });
   }
   renderTimeout() {
     // TODO perhaps redirect to a URL that can be resolved?
@@ -53,12 +64,13 @@ export default class InvoiceProcessing extends Component {
     return <div>Swap Complete!</div>;
   }
   render() {
-    const { invoice, txid, finalTx, spendAmount, mining, amount, timeout, complete, cancelBlockHeight, latestBlock } = this.state;
-    if (timeout) { return this.renderTimeout(); }
-    if (complete) { return this.renderCoplete(); }
+    const { invoice, miningTx, finalTx, preImageHash, mining, amount, timeout, complete } = this.state;
+    // if (timeout) { return this.renderTimeout(); }
+    // if (complete) { return this.renderComplete(); }
     const uri = `lightning:${invoice}`;
     return (
       <div>
+        <pre>{JSON.stringify(this.state, null, 2)}</pre>
         {finalTx
           && (
           <div>
@@ -71,12 +83,12 @@ export default class InvoiceProcessing extends Component {
           </div>
           )
           }
-        {txid && (
+        {miningTx && (
         <Callout
           intent={mining ? 'warning' : 'success'}
           title={mining ? 'Mining Transaction' : 'Mined Transaction'}
         >
-          <a className="trunchate" href={`https://explorer.testnet.rsk.co/tx/${txid}`} target="_blank">{txid}</a>
+          <a className="trunchate" href={`https://explorer.testnet.rsk.co/tx/${miningTx}`} target="_blank">{miningTx}</a>
         </Callout>
         )}
         {(invoice && !mining) && (
@@ -100,6 +112,9 @@ export default class InvoiceProcessing extends Component {
                 {uri}
               </Callout>
             </a>
+            <Callout style={{ overflowY: 'scroll' }}>
+              Payment Hash: {preImageHash}
+            </Callout>
           </Callout>
         </div>
         )}

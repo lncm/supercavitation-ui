@@ -35,72 +35,48 @@ function getContract(address) {
 export async function getContractInfo(address) {
   if (!address) { throw new Error('Enter an Address'); }
   const contract = getContract(address);
-  const [httpEndpoint, owner, lockedFunds, balance] = await Promise.all([
+  let [httpEndpoint, owner, lockedFunds, balance] = await Promise.all([
     contract.methods.url().call(),
     contract.methods.owner().call(),
     contract.methods.lockedFunds().call(),
     web3.eth.getBalance(address),
   ]);
+  httpEndpoint = 'http://localhost:8081'; // dev mode
   return { httpEndpoint, owner, lockedFunds, balance };
 }
-
-export async function awaitSwapStatus({ contractAddress, fullHash, completionTimeout }) {
-  // TODO cancel poll, etc..
-
-  const hash = `0x${new Buffer(fullHash, 'base64').toString('hex')}`;
-  const contract = getContract(contractAddress);
-  return new Promise(async (resolve) => {
-    async function poll() {
-      // if we pass completion timeout, we expect the payment to be completed...
-      if (completionTimeout) {
-        setTimeout(() => resolve({ timeout: true }), completionTimeout);
-      }
-      try {
-        console.log('geteting', hash);
-        const pollData = await contract.methods.getSwap(hash).call();
-        const latestBlock = await web3.eth.getBlockNumber();
-        console.log('got latest', pollData, latestBlock);
-        // if completionTimeout is set, only resolve if status isn't 0
-        if (completionTimeout && pollData.status === '0') {
-          console.log('contract not resolved yet, trying again...');
-        }
-        if (pollData.amount != '0') {
-          return resolve({ ...pollData, latestBlock });
-        }
-      } catch (e) {
-        console.log('not mined, trying again...', e);
-      }
-      await new Promise(r => setTimeout(r, 5000));
-      poll();
-    }
-    poll();
-  });
-}
-
 export function monitorSwap({ preImageHash, contractAddress, updateState }) {
   const contract = getContract(contractAddress);
   const hash = `0x${preImageHash}`;
-  const poller = {
-    async poll() {
-      if (!this.stopped) {
-        try {
-          const pollData = await contract.methods.getSwap(hash).call();
-          updateState({ ...pollData });
-        } catch (err) {
-          updateState({ err });
-          this.stop();
-          return;
+  return new Promise((resolve) => {
+    let resolved = false;
+    const poller = {
+      async poll() {
+        if (!poller.stopped) {
+          try {
+            const pollData = await contract.methods.getSwap(hash).call();
+            console.log(pollData);
+            await updateState({ ...pollData });
+          } catch (err) {
+            console.log(err);
+            await updateState({ err });
+          }
+          // return this after the first request
+          if (!resolved) {
+            resolved = true;
+            resolve(poller);
+          }
+          await new Promise(r => setTimeout(r, 2000));
+          console.log('polling again...');
+          this.poll();
         }
-        await new Promise(r => setTimeout(r, 5000));
-      }
-    },
-    stop() {
-      console.log('stopping polling');
-      this.polling = false;
-    },
-  };
-  poller.poll();
-  return poller;
+      },
+      stop() {
+        console.log('stopping polling');
+        poller.stopped = true;
+      },
+    };
+    poller.poll();
+  });
 }
 
 export async function claimFunds({ contractAddress, preImage, preImageHash }) {

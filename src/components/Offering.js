@@ -4,7 +4,7 @@ import { Spinner, Button, HTMLTable } from '@blueprintjs/core';
 import { explorerUrl } from '../util';
 
 import { getContractInfo } from '../web3';
-import { getSwapInfo } from '../http';
+import { getOfferingInfo } from '../http';
 
 import InvoiceCreation from './InvoiceCreation';
 
@@ -40,7 +40,7 @@ export default class Offering extends Component {
   }
   async getHttpInfo() {
     const { httpEndpoint } = this.state;
-    this.setState({ ...await getSwapInfo(httpEndpoint) });
+    this.setState({ ...await getOfferingInfo(httpEndpoint) });
   }
   render() {
     const { match: { params: { contractAddress } } } = this.props;
