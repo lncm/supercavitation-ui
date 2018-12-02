@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import QRCode from 'qrcode.react';
-import { Callout } from '@blueprintjs/core';
+import { Callout, Spinner } from '@blueprintjs/core';
 
 import { explorerUrl } from '../util';
 import { requestInvoices, getStatus } from '../http';
@@ -21,8 +21,12 @@ export default class InvoiceProcessing extends Component {
   async processInvoices() {
     const { spendAmount, httpEndpoint, contractAddress } = this.props;
     // request the invoice, show deposit if required
-    const { depositInvoice, paymentInvoice, preImageHash } = await requestInvoices({ contractAddress, httpEndpoint, spendAmount });
-    this.setState({ preImageHash, invoice: depositInvoice || paymentInvoice });
+    const { depositInvoice, paymentInvoice, preImageHash, depositInvoiceData, paymentInvoiceData } = await requestInvoices({ contractAddress, httpEndpoint, spendAmount });
+    this.setState({
+      preImageHash,
+      invoice: depositInvoice || paymentInvoice,
+      invoiceData: depositInvoiceData || paymentInvoiceData,
+    });
     // lets poll the contract for the stuff we can verify ourselves
     this.poller = await monitorSwap({
       preImageHash,
@@ -37,7 +41,11 @@ export default class InvoiceProcessing extends Component {
         } else if (amount > '0') {
           // the swap is created...
           if (!this.state.settleTx) {
-            this.setState({ invoice: paymentInvoice, mining: false });
+            this.setState({
+              invoice: paymentInvoice,
+              invoiceData: paymentInvoiceData,
+              mining: false,
+            });
             const { settleTx: miningTx } = await getStatus({ httpEndpoint, preImageHash });
             if (miningTx) {
               // we might not have the settle tx yet... server's not synced yet? anyway, just skip this and retry
@@ -53,56 +61,80 @@ export default class InvoiceProcessing extends Component {
       },
     });
   }
-  renderTimeout() {
-    // TODO perhaps redirect to a URL that can be resolved?
-    const { fullHash } = this.state;
-    const { contractAddress } = this.props;
-    return <Timeout {...{ fullHash, contractAddress }} />;
-  }
+  // renderTimeout() {
+  //   // TODO perhaps redirect to a URL that can be resolved?
+  //   const { fullHash } = this.state;
+  //   const { contractAddress } = this.props;
+  //   return <Timeout {...{ fullHash, contractAddress }} />;
+  // }
   renderComplete() {
-    // TODO show status + updated balance
-    return <div>Swap Complete!</div>;
+    return (
+      <Callout title="Swap Complete!" intent="success" icon="tick">
+        Congratulations, the swap is settled!
+      </Callout>
+    );
+  }
+  renderCancelled() {
+    return (
+      <Callout title="Swap Canclled!" intent="danger" icon="cross">
+        Sorry, the swap timed out and was cancelled
+      </Callout>
+    );
   }
   render() {
-    const { invoice, miningTx, finalTx, preImageHash, mining, amount, timeout, complete } = this.state;
+    const { spendAmount } = this.props;
+    const { invoice, miningTx, settleTx, preImageHash, mining, invoiceData, creationTx, completed, cancelled } = this.state;
+    // TODO show 'timeout' box...
     // if (timeout) { return this.renderTimeout(); }
-    // if (complete) { return this.renderComplete(); }
+    if (!invoiceData) { return <Spinner />; }
+    if (completed) { return this.renderComplete(); }
+    if (cancelled) { return this.renderCancelled(); }
     const uri = `lightning:${invoice}`;
     return (
       <div>
-        <pre>{JSON.stringify(this.state, null, 2)}</pre>
-        {finalTx
-          && (
-          <div>
-          Other party has submitted the swap settlement
-            <a href={`${explorerUrl}/tx/${finalTx}`} target="_blank">
-              {finalTx.slice(0, 10)}...
-            </a>
-            <br />
-          Please wait a few minutes for it to confirm...
-          </div>
-          )
-          }
         {miningTx && (
         <Callout
           intent={mining ? 'warning' : 'success'}
           title={mining ? 'Mining Transaction' : 'Mined Transaction'}
         >
-          <a className="trunchate" href={`https://explorer.testnet.rsk.co/tx/${miningTx}`} target="_blank">{miningTx}</a>
+          {mining
+            && (
+            <div>
+              {settleTx
+                ? <div>Bob has published the swap settlement!</div>
+                : <div>Bob is creating the swap!</div>
+            }
+            </div>
+            )
+          }
+          {!mining
+            && (
+            <div>
+              {settleTx
+                ? <div>The swap is settled!</div>
+                : <div>Bob has created the swap and it matches the payment hash; you can safely pay the invoice!</div>
+            }
+            </div>
+            )
+          }
+
+          <span className="trunchate"><a href={`https://explorer.testnet.rsk.co/tx/${miningTx}`} target="_blank">{miningTx}</a></span>
+          {mining && <div>Please wait a monent for it to be mined...</div>}
         </Callout>
         )}
         {(invoice && !mining) && (
         <div>
           <Callout title="Scan or Tap To Pay">
-            {(amount && !finalTx)
+            <div>This invoice requests <b>{invoiceData.amount}</b> LN satoshis</div>
+            {creationTx
               ? (
                 <div style={{ marginBottom: '0.5em' }}>
-              Pay the invoice to receive <b>{amount}</b> RBTC
+              Pay this invoice to receive <b>{spendAmount}</b> RBTC satoshis
                 </div>
               )
               : (
                 <div style={{ marginBottom: '0.5em' }}>
-              Pay the deposit to generate a swap contract
+              Pay this deposit to generate the swap
                 </div>
               )
             }
@@ -113,11 +145,12 @@ export default class InvoiceProcessing extends Component {
               </Callout>
             </a>
             <Callout style={{ overflowY: 'scroll' }}>
-              Payment Hash: {preImageHash}
+              Payment Hash (save for reference): {preImageHash}
             </Callout>
           </Callout>
         </div>
         )}
+        <pre>{JSON.stringify({ state: this.state, props: this.props }, null, 2)}</pre>
       </div>
     );
   }

@@ -20,7 +20,7 @@ const table = [
   ['lockedFunds', 'Locked Funds'],
   ['balance', 'Total Balance'],
   ['minAmount', 'Minimum Order'],
-  ['timeLockNumber', 'Blocks Time Lock'],
+  ['timeLockBlocks', 'Time Lock Blocks'],
   ['depositFee', 'Deposit Fee'],
   ['exchangeRate', 'Exchange Rate'],
   ['reward', 'Redemption Reward'],

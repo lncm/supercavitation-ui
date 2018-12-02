@@ -7,8 +7,6 @@ const rskTestnetDerivation = "m/44'/37310'/0'/0/";
 
 let web3;
 
-// const contractAddress = SwapOffering.networks['31'].address;
-
 export async function getAddress() {
   const [address] = await web3.eth.getAccounts();
   return address;
@@ -84,18 +82,4 @@ export async function claimFunds({ contractAddress, preImage, preImageHash }) {
   const from = await getAddress();
   const { tx: txid } = await contract.methods.completeSwap(`0x${preImageHash}`, `0x${preImage}`).send({ from, gasPrice });
   return txid;
-}
-
-export async function awaitTxMined({ txid }) {
-  return new Promise((resolve) => {
-    async function poll() {
-      const tx = await web3.eth.getTransaction(txid);
-      if (tx.blockNumber) {
-        return resolve(tx);
-      }
-      await new Promise(r => setTimeout(r, 5000));
-      poll();
-    }
-    poll();
-  });
 }
