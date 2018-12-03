@@ -1,80 +1,73 @@
 import React, { Component } from 'react';
+import Web3 from 'web3';
 import { Button, Callout, NumericInput } from '@blueprintjs/core';
 
 import InvoiceProcessing from './InvoiceProcessing';
+import SelfPublish from './SelfPublish';
 
-// 0. Input amount you wish to get...
-//
-// 1. make request to bob to get invoice, sign the message
-// 2. show the deposit payment invoice
-// 3. wait for response (tx id)
-//
-// 4. Repat 1-3 for main invoice
-//
-// 5. See if bob automatically claims the rewards (timeout
-//
-// 6. Show UI to claim funds if not
+const { utils: { toBN } } = Web3;
 
 export default class InvoiceFlow extends Component {
   constructor(props) {
     super(props);
-    this.state = { };
-    this.changeSpendAmount = this.changeSpendAmount.bind(this);
+    this.state = {};
+    this.changeRequestedAmount = this.changeRequestedAmount.bind(this);
     this.requestInvoice = this.requestInvoice.bind(this);
   }
-  changeSpendAmount(amount) {
-    this.setState({ spendAmount: amount });
+  changeRequestedAmount(amount) {
+    this.setState({ requestedAmountInSatoshis: amount });
   }
   requestInvoice() {
     this.setState({ request: true });
   }
   renderInput() {
-    const { lockedFunds, minAmount, balance } = this.props;
-    // TODO use web3 bignumber
-    const maxAmount = balance - lockedFunds;
-    if (minAmount >= maxAmount) {
+    const { exchangeRate, timeLockBlocks, depositFeeSatoshis, lockedFunds, minAmountSatoshis, balance, rewardWei, supercavitationWei } = this.props;
+    const { requestedAmountInSatoshis } = this.state;
+    const maxAmount = toBN(balance).sub(toBN(lockedFunds));
+    const minAmount = toBN(minAmountSatoshis).mul(toBN(1e10));
+    if (minAmount.gt(maxAmount)) {
       return (
         <Callout title="Sorry" intent="warning" icon="cross">
-          There aren't enough funds in in this swap contract to request an order
+          There are not enough unlocked funds in this swap contract to request an order.
         </Callout>
       );
     }
-    const { reward, exchangeRate, timeLockNumber, depositFee } = this.props;
-    const { spendAmount } = this.state;
-    const exchangeAmount = Math.round(exchangeRate * spendAmount);
-    const totalFees = reward + depositFee;
-    // TODO calculate this better!
-    const minimumSpend = Math.ceil((minAmount / exchangeRate) + totalFees);
-    const maximumSpend = Math.floor((maxAmount / exchangeRate) - totalFees);
-    const actualReceive = exchangeAmount - totalFees;
-    const badAmount = !spendAmount || (minimumSpend > spendAmount || maximumSpend < spendAmount);
+    const spendAmount = toBN(requestedAmountInSatoshis || 0);
+    const amountOfferedInWei = spendAmount.mul(toBN(exchangeRate));
+    const depositFeeInWei = toBN(depositFeeSatoshis).pow(toBN(10));
+    const amountAfterFeesWei = amountOfferedInWei.sub(toBN(rewardWei)).sub(toBN(supercavitationWei)).sub(toBN(depositFeeInWei));
+    const totalFees = amountOfferedInWei.sub(amountAfterFeesWei);
+    const badAmount = amountOfferedInWei.gt(maxAmount) || amountOfferedInWei.lt(minAmount);
+    const min = Math.ceil(minAmount.toNumber() / 1e10);
+    const max = Math.floor(maxAmount.toNumber() / 1e10);
     return (
       <Callout title="Request Invoice" intent="primary" icon="cell-tower">
+        Enter amount of <b>satoshis</b> you wish to spend
         <NumericInput
           placeholder="Enter Amount"
-          min={minimumSpend}
-          max={maximumSpend}
+          min={min}
+          max={max}
           type="number"
           large
           leftIcon="exchange"
           stepSize={1}
-          value={spendAmount}
+          value={requestedAmountInSatoshis}
           fill
           allowNumericCharactersOnly
           intent="primary"
-          onValueChange={this.changeSpendAmount}
+          onValueChange={this.changeRequestedAmount}
         />
         <div style={{ paddingBottom: '0.5em' }} />
         {badAmount
-          ? <div>Enter an integer between {minimumSpend} and {maximumSpend}</div>
+          ? <div>Enter an integer between {min} and {max}</div>
           : <Button large fill intent="primary" icon="tick-circle" type="submit" onClick={this.requestInvoice} text="Submit" />
         }
         {!badAmount && (
         <ul>
-          <li>Fee are {depositFee} + {reward} = <b>{totalFees}</b></li>
-          <li>You spend <b>{spendAmount}</b></li>
-          <li>Receive <b>{actualReceive}</b></li>
-          <li>You'll have to pay within <b>{timeLockNumber} blocks</b></li>
+          <li>Total fees are <b>{totalFees.toString()}</b> Wei</li>
+          <li>You spend <b>{requestedAmountInSatoshis}</b> BTC Satoshis</li>
+          <li>You will receive <b>{amountAfterFeesWei.toString()}</b> RBTC Wei</li>
+          <li>You must pay within <b>{timeLockBlocks} blocks</b></li>
         </ul>
         )}
       </Callout>
@@ -85,6 +78,10 @@ export default class InvoiceFlow extends Component {
     if (request) {
       return <InvoiceProcessing {...this.state} {...this.props} />;
     }
-    return this.renderInput();
+    return (
+      <div>        
+        {this.renderInput()}
+      </div>
+    )
   }
 }

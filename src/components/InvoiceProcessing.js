@@ -2,11 +2,12 @@ import React, { Component } from 'react';
 import QRCode from 'qrcode.react';
 import { Callout, Spinner } from '@blueprintjs/core';
 
-import { explorerUrl } from '../util';
-import { requestInvoices, getStatus } from '../http';
-import { monitorSwap } from '../web3';
+import { requestInvoices, getStatus } from '../api/http';
+import { monitorSwap } from '../api/web3';
 
-import Timeout from './Timeout';
+import SelfPublish from './SelfPublish';
+
+// import Timeout from './Timeout';
 
 export default class InvoiceProcessing extends Component {
   constructor(props) {
@@ -17,11 +18,14 @@ export default class InvoiceProcessing extends Component {
   componentDidMount() {
     this.processInvoices();
   }
+  componentWillUnmount() {
+    this.poller.stop();
+  }
   // TODO unmount stop polling!
   async processInvoices() {
-    const { spendAmount, httpEndpoint, contractAddress } = this.props;
+    const { requestedAmountInSatoshis, httpEndpoint, contractAddress } = this.props;
     // request the invoice, show deposit if required
-    const { depositInvoice, paymentInvoice, preImageHash, depositInvoiceData, paymentInvoiceData } = await requestInvoices({ contractAddress, httpEndpoint, spendAmount });
+    const { depositInvoice, paymentInvoice, preImageHash, depositInvoiceData, paymentInvoiceData } = await requestInvoices({ contractAddress, httpEndpoint, requestedAmountInSatoshis });
     this.setState({
       preImageHash,
       invoice: depositInvoice || paymentInvoice,
@@ -61,12 +65,6 @@ export default class InvoiceProcessing extends Component {
       },
     });
   }
-  // renderTimeout() {
-  //   // TODO perhaps redirect to a URL that can be resolved?
-  //   const { fullHash } = this.state;
-  //   const { contractAddress } = this.props;
-  //   return <Timeout {...{ fullHash, contractAddress }} />;
-  // }
   renderComplete() {
     return (
       <Callout title="Swap Complete!" intent="success" icon="tick">
@@ -77,15 +75,13 @@ export default class InvoiceProcessing extends Component {
   renderCancelled() {
     return (
       <Callout title="Swap Canclled!" intent="danger" icon="cross">
-        Sorry, the swap timed out and was cancelled
+        Sorry, the swap timed out and is cancelled
       </Callout>
     );
   }
   render() {
-    const { spendAmount } = this.props;
+    const { requestedAmountInSatoshis } = this.props;
     const { invoice, miningTx, settleTx, preImageHash, mining, invoiceData, creationTx, completed, cancelled } = this.state;
-    // TODO show 'timeout' box...
-    // if (timeout) { return this.renderTimeout(); }
     if (!invoiceData) { return <Spinner />; }
     if (completed) { return this.renderComplete(); }
     if (cancelled) { return this.renderCancelled(); }
@@ -129,7 +125,7 @@ export default class InvoiceProcessing extends Component {
             {creationTx
               ? (
                 <div style={{ marginBottom: '0.5em' }}>
-              Pay this invoice to receive <b>{spendAmount}</b> RBTC satoshis
+              Pay this invoice to receive <b>{requestedAmountInSatoshis}</b> RBTC satoshis
                 </div>
               )
               : (
@@ -150,6 +146,9 @@ export default class InvoiceProcessing extends Component {
           </Callout>
         </div>
         )}
+        <br />
+        <SelfPublish {...this.state} {...this.props} />
+        {/* {((creationTx && !mining) || settleTx) && <SelfPublish {...this.state} {...this.props} />} */}
         <pre>{JSON.stringify({ state: this.state, props: this.props }, null, 2)}</pre>
       </div>
     );

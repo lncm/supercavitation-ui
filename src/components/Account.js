@@ -1,21 +1,16 @@
 import React, { Component } from 'react';
-import { Route, Switch, Redirect } from 'react-router-dom';
 import { Navbar, Alignment, Button, Text, TextArea } from '@blueprintjs/core';
 
-import Offering from './Offering';
-import Registry from './Registry';
+import Main from './Main';
 
-
-import { getAccountInfo } from '../web3';
-
-const randomMnemonic = 'drama rescue intact royal denial oblige direct vendor market soda mandate accident';
+import { randomMnemonic } from '../config';
+import { getAccountInfo } from '../api/web3';
 
 
 export default class Account extends Component {
   constructor(props) {
     super(props);
     this.state = { mnemonic: '' };
-    // this.state = { mnemonic: randomMnemonic, address: '0x0f18cd0F5B7CcE9d6DCC246F80B0fCdd7a2AF150', balance: 123123 };
     this.generateMnemonic = this.generateMnemonic.bind(this);
     this.changeInput = this.changeInput.bind(this);
   }
@@ -75,15 +70,7 @@ export default class Account extends Component {
             {this.renderAccountBalance()}
           </Navbar.Group>
         </Navbar>
-        <div className="content">
-          <Switch>
-            <Route path="/registry/:contractAddress" component={Registry} />
-            <Route path="/offering/:contractAddress" component={Offering} />
-            <Redirect from="/offering" to="/offering/0xd3fbe74a9a1c2d1ad1794fb23a148cef60d69c5c" />
-            <Redirect from="/registry" to="/registry/0x1234" />
-            <Redirect from="/" to="/registry/0x1234" />
-          </Switch>
-        </div>
+        <Main />
       </div>
     );
   }

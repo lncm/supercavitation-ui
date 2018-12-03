@@ -1,29 +1,28 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { Spinner, Button, HTMLTable } from '@blueprintjs/core';
-import { explorerUrl } from '../util';
+import { explorerUrl } from '../config';
 
-import { getContractInfo } from '../web3';
-import { getOfferingInfo } from '../http';
+import { getContractInfo } from '../api/web3';
+import { getOfferingInfo } from '../api/http';
 
 import InvoiceCreation from './InvoiceCreation';
+import SelfPublish from './SelfPublish';
 
-// const fields = [
-//   ''
-// ]
-
-const explorerLink = addr => <a href={`${explorerUrl}/address/${addr}`}>{addr.slice(0, 12)}...</a>;
+const explorerLink = addr => <a target="_blank" href={`${explorerUrl}/address/${addr}`}>{addr.slice(0, 12)}...</a>;
 
 const table = [
   ['contract', 'Contract Address', ({ contractAddress: a }) => explorerLink(a)],
   ['owner', 'Contract Owner', ({ owner: a }) => explorerLink(a)],
-  ['lockedFunds', 'Locked Funds'],
-  ['balance', 'Total Balance'],
-  ['minAmount', 'Minimum Order'],
-  ['timeLockBlocks', 'Time Lock Blocks'],
-  ['depositFee', 'Deposit Fee'],
   ['exchangeRate', 'Exchange Rate'],
-  ['reward', 'Redemption Reward'],
+  ['timeLockBlocks', 'Time Lock Blocks'],
+  ['minAmountSatoshis', 'Min Order (Satoshis)'],
+  ['depositFeeSatoshis', 'Deposit Fee (Satoshis)'],
+  ['rewardWei', 'Close Reward (Wei)'],
+  ['supercavitationWei', 'Supercavitation (Wei)'],
+  ['balance', 'Total Balance (Wei)'],
+  ['lockedFunds', 'Locked Funds (Wei)'],
+  ['version', 'Server Version'],
 ];
 
 export default class Offering extends Component {
@@ -44,7 +43,7 @@ export default class Offering extends Component {
   }
   render() {
     const { match: { params: { contractAddress } } } = this.props;
-    const { text, httpEndpoint } = this.state;
+    const { text, name } = this.state;
     return (
       <div>
         <Link to="/registry">
@@ -53,10 +52,8 @@ export default class Offering extends Component {
         {!text ? <Spinner />
           : (
             <div>
-              <h2>
-                {text}
-                <small><br />{httpEndpoint}</small>
-              </h2>
+              <h2 style={{ marginBottom: 0 }}>{name}</h2>
+              <h3 style={{ marginTop: 0 }}>{text}</h3>
               <div className="row">
                 <div>
                   <HTMLTable bordered condensed striped>

@@ -22,7 +22,6 @@ const networks = {
   sm: 'simnet',
 };
 
-
 function decodeInvoice(invoice) {
   const decoded = decode(invoice);
   const [preImageHash, memo, cltv, expiry] = decoded.fields.map(({ value }) => value);
@@ -35,9 +34,10 @@ function decodeInvoice(invoice) {
   };
 }
 
-export async function requestInvoices({ spendAmount, contractAddress, httpEndpoint }) {
-  const { paymentInvoice, depositInvoice } = await postData(`${httpEndpoint}/swap`, { amount: spendAmount, customer: await getAddress(), contract: contractAddress });
-  // TODO, validate shit...
+export async function requestInvoices({ requestedAmountInSatoshis, contractAddress, httpEndpoint }) {
+  const data = { amount: requestedAmountInSatoshis, customer: await getAddress(), contract: contractAddress };
+  const { paymentInvoice, depositInvoice } = await postData(`${httpEndpoint}/swap`, data);
+  // TODO, validate the returned invoice data against blockchain...
   const paymentInvoiceData = decodeInvoice(paymentInvoice);
   return {
     depositInvoice,

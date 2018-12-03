@@ -2,8 +2,7 @@ import Web3 from 'web3';
 import HDWalletProvider from 'truffle-hdwallet-provider';
 import SwapOffering from '@lncm/supercavitation-contracts/build/contracts/SwapOffering.json';
 
-const gasPrice = 1;
-const rskTestnetDerivation = "m/44'/37310'/0'/0/";
+import { gasPrice, evmNode, derivationPath } from '../config';
 
 let web3;
 
@@ -13,7 +12,8 @@ export async function getAddress() {
 }
 
 export async function getAccountInfo(mnemonic) {
-  const provider = new HDWalletProvider(mnemonic, 'https://public-node.testnet.rsk.co', 0, 1, false, rskTestnetDerivation);
+  const provider = new HDWalletProvider(mnemonic, evmNode, 0, 1, false, derivationPath);
+  provider.engine.stop();
   web3 = new Web3(provider);
   const address = await getAddress();
   const balance = await web3.eth.getBalance(address);
@@ -45,36 +45,29 @@ export async function getContractInfo(address) {
 export function monitorSwap({ preImageHash, contractAddress, updateState }) {
   const contract = getContract(contractAddress);
   const hash = `0x${preImageHash}`;
-  return new Promise((resolve) => {
-    let resolved = false;
-    const poller = {
-      async poll() {
-        if (!poller.stopped) {
-          try {
-            const pollData = await contract.methods.getSwap(hash).call();
-            console.log(pollData);
-            await updateState({ ...pollData });
-          } catch (err) {
-            console.log(err);
-            await updateState({ err });
-          }
-          // return this after the first request
-          if (!resolved) {
-            resolved = true;
-            resolve(poller);
-          }
-          await new Promise(r => setTimeout(r, 2000));
-          console.log('polling again...');
-          this.poll();
+  const poller = {
+    async poll() {
+      if (!poller.stopped) {
+        try {
+          const pollData = await contract.methods.getSwap(hash).call();
+          console.log(pollData);
+          await updateState({ ...pollData });
+        } catch (err) {
+          console.error(err);
+          await updateState({ err });
         }
-      },
-      stop() {
-        console.log('stopping polling');
-        poller.stopped = true;
-      },
-    };
-    poller.poll();
-  });
+        await new Promise(r => setTimeout(r, 2000));
+        console.log('polling again...');
+        this.poll();
+      }
+    },
+    stop() {
+      console.log('stopping polling');
+      poller.stopped = true;
+    },
+  };
+  poller.poll();
+  return poller;
 }
 
 export async function claimFunds({ contractAddress, preImage, preImageHash }) {
