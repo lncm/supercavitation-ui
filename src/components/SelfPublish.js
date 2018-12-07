@@ -19,7 +19,6 @@ export default class SelfPublish extends Component {
   async changeInput({ target }) {
     const preImage = target.value.replace('0x', '').trim();
     const preImageHash = await sha256(preImage);
-    console.log('trigered change', preImage, preImageHash);
     this.setState({ preImageHash, preImage });
   }
   async claimFunds() {
@@ -27,7 +26,7 @@ export default class SelfPublish extends Component {
     // create and track the tx...
     const { preImageHash, preImage } = this.state;
     const { contractAddress } = this.props;
-    const { txid } = await claimFunds({ contractAddress, preImageHash, preImage });
+    const txid = await claimFunds({ contractAddress, preImageHash, preImage });
     this.setState({ txid });
   }
   renderClaiming() {
@@ -47,8 +46,9 @@ export default class SelfPublish extends Component {
     const { claiming, preImageHash } = this.state;
     if (claiming) { return this.renderClaiming(); }
     const { preImageHash: targetPreImageHash } = this.props;
-    const canClaim = preImageHash && (preImageHash === targetPreImageHash);
-    const cannotClaim = preImageHash && (preImageHash !== targetPreImageHash);
+    const canClaim = preImageHash;
+    // const canClaim = preImageHash && (preImageHash === targetPreImageHash);
+    // const cannotClaim = preImageHash && (preImageHash !== targetPreImageHash);
     return (
       <Callout title="Self-Publish" icon="send-to">
         <p>If the swap is created, so you can publish the preImage at any time using the form below, or wait for the swap provider to do so.</p>
@@ -56,7 +56,7 @@ export default class SelfPublish extends Component {
         <Text onChange={this.changeInput} />
         <TextArea large fill onChange={this.changeInput} />
         <p>
-          {cannotClaim && <b>Sorry, the preImage does not match, try another one</b>}
+          {/* {cannotClaim && <b>Sorry, the preImage does not match, try another one</b>} */}
           {canClaim && <Button type="submit" onClick={this.claimFunds}>Publish preImage</Button>}
         </p>
       </Callout>

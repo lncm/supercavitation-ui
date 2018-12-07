@@ -7,14 +7,13 @@ import { getContractInfo } from '../api/web3';
 import { getOfferingInfo } from '../api/http';
 
 import InvoiceCreation from './InvoiceCreation';
-import SelfPublish from './SelfPublish';
 
 const explorerLink = addr => <a target="_blank" href={`${explorerUrl}/address/${addr}`}>{addr.slice(0, 12)}...</a>;
 
 const table = [
   ['contract', 'Contract Address', ({ contractAddress: a }) => explorerLink(a)],
   ['owner', 'Contract Owner', ({ owner: a }) => explorerLink(a)],
-  ['exchangeRate', 'Exchange Rate'],
+  ['exchangeRate', 'Rate (Satoshis to Wei)'],
   ['timeLockBlocks', 'Time Lock Blocks'],
   ['minAmountSatoshis', 'Min Order (Satoshis)'],
   ['depositFeeSatoshis', 'Deposit Fee (Satoshis)'],

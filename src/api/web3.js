@@ -2,7 +2,7 @@ import Web3 from 'web3';
 import HDWalletProvider from 'truffle-hdwallet-provider';
 import SwapOffering from '@lncm/supercavitation-contracts/build/contracts/SwapOffering.json';
 
-import { gasPrice, evmNode, derivationPath } from '../config';
+import { gas, gasPrice, evmNode, derivationPath } from '../config';
 
 let web3;
 
@@ -73,6 +73,11 @@ export function monitorSwap({ preImageHash, contractAddress, updateState }) {
 export async function claimFunds({ contractAddress, preImage, preImageHash }) {
   const contract = getContract(contractAddress);
   const from = await getAddress();
-  const { tx: txid } = await contract.methods.completeSwap(`0x${preImageHash}`, `0x${preImage}`).send({ from, gasPrice });
-  return txid;
+  console.log('creating transaction', { preImageHash, preImage, contract, from, gasPrice });
+  const tx = await new Promise((resolve) => {
+    contract.methods.completeSwap(`0x${preImageHash}`, `0x${preImage}`).send({ from, gasPrice, gas })
+      .on('transactionHash', resolve);
+  });
+  console.log(tx);
+  return tx;
 }

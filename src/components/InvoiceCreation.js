@@ -36,7 +36,6 @@ export default class InvoiceFlow extends Component {
     const amountOfferedInWei = spendAmount.mul(toBN(exchangeRate));
     const depositFeeInWei = toBN(depositFeeSatoshis).pow(toBN(10));
     const amountAfterFeesWei = amountOfferedInWei.sub(toBN(rewardWei)).sub(toBN(supercavitationWei)).sub(toBN(depositFeeInWei));
-    const totalFees = amountOfferedInWei.sub(amountAfterFeesWei);
     const badAmount = amountOfferedInWei.gt(maxAmount) || amountOfferedInWei.lt(minAmount);
     const min = Math.ceil(minAmount.toNumber() / 1e10);
     const max = Math.floor(maxAmount.toNumber() / 1e10);
@@ -64,9 +63,9 @@ export default class InvoiceFlow extends Component {
         }
         {!badAmount && (
         <ul>
-          <li>Total fees are <b>{totalFees.toString()}</b> Wei</li>
-          <li>You spend <b>{requestedAmountInSatoshis}</b> BTC Satoshis</li>
-          <li>You will receive <b>{amountAfterFeesWei.toString()}</b> RBTC Wei</li>
+          <li>You will spend <b>{requestedAmountInSatoshis}</b> satoshis</li>
+          <li>And a <b>{depositFeeSatoshis}</b> satoshi deposit fee</li>
+          <li>You will receive <b>{amountAfterFeesWei.toString()}</b> Wei</li>
           <li>You must pay within <b>{timeLockBlocks} blocks</b></li>
         </ul>
         )}
@@ -78,10 +77,6 @@ export default class InvoiceFlow extends Component {
     if (request) {
       return <InvoiceProcessing {...this.state} {...this.props} />;
     }
-    return (
-      <div>        
-        {this.renderInput()}
-      </div>
-    )
+    return this.renderInput();
   }
 }
