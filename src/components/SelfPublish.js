@@ -23,7 +23,6 @@ export default class SelfPublish extends Component {
   }
   async claimFunds() {
     this.setState({ claiming: true });
-    // create and track the tx...
     const { preImageHash, preImage } = this.state;
     const { contractAddress } = this.props;
     const txid = await claimFunds({ contractAddress, preImageHash, preImage });
@@ -31,34 +30,37 @@ export default class SelfPublish extends Component {
   }
   renderClaiming() {
     const { txid } = this.state;
-    if (txid) {
-      return (
-        <div>
-          <a href={`${explorerUrl}/tx/${txid}`} target="_blank">
-            {txid.slice(0, 10)}...
-          </a>
-        </div>
-      );
-    }
-    return <div>Claming funds. Please wait...</div>;
+    return (
+      <Callout>
+        {!txid
+          ? <div>Publishing Transaction. Please wait...</div>
+          : (
+            <a href={`${explorerUrl}/tx/${txid}`} target="_blank" className="truncate">
+              {txid}
+            </a>
+          )
+        }
+      </Callout>
+    );
   }
   render() {
     const { claiming, preImageHash } = this.state;
     if (claiming) { return this.renderClaiming(); }
     const { preImageHash: targetPreImageHash } = this.props;
-    const canClaim = preImageHash;
-    // const canClaim = preImageHash && (preImageHash === targetPreImageHash);
-    // const cannotClaim = preImageHash && (preImageHash !== targetPreImageHash);
+    const missMatch = targetPreImageHash && targetPreImageHash !== preImageHash;
     return (
       <Callout title="Self-Publish" icon="send-to">
         <p>If the swap is created, so you can publish the preImage at any time using the form below, or wait for the swap provider to do so.</p>
         <p>Paste in your pre-image below to complete the swap yourself:</p>
         <Text onChange={this.changeInput} />
         <TextArea large fill onChange={this.changeInput} />
-        <p>
-          {/* {cannotClaim && <b>Sorry, the preImage does not match, try another one</b>} */}
-          {canClaim && <Button type="submit" onClick={this.claimFunds}>Publish preImage</Button>}
-        </p>
+        {preImageHash && (
+          <div>
+            <br />
+            <Button type="submit" onClick={this.claimFunds}>Publish preImage</Button>
+            {missMatch && <b>Pasted preImage does not match current swap</b>}
+          </div>
+        )}
       </Callout>
     );
   }

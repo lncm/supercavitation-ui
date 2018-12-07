@@ -42,7 +42,7 @@ export async function getContractInfo(address) {
   httpEndpoint = 'http://localhost:8081'; // dev mode
   return { httpEndpoint, owner, lockedFunds, balance };
 }
-export function monitorSwap({ preImageHash, contractAddress, updateState }) {
+export function monitorSwap({ onError, preImageHash, contractAddress, updateState }) {
   const contract = getContract(contractAddress);
   const hash = `0x${preImageHash}`;
   const poller = {
@@ -53,8 +53,7 @@ export function monitorSwap({ preImageHash, contractAddress, updateState }) {
           console.log(pollData);
           await updateState({ ...pollData });
         } catch (err) {
-          console.error(err);
-          await updateState({ err });
+          await onError(err);
         }
         await new Promise(r => setTimeout(r, 2000));
         console.log('polling again...');

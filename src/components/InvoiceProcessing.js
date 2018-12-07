@@ -22,19 +22,16 @@ export default class InvoiceProcessing extends Component {
     this.poller.stop();
   }
   // TODO unmount stop polling!
-  async processInvoices() {
-    const { requestedAmountInSatoshis, httpEndpoint, contractAddress } = this.props;
-    // request the invoice, show deposit if required
-    const { depositInvoice, paymentInvoice, preImageHash, depositInvoiceData, paymentInvoiceData } = await requestInvoices({ contractAddress, httpEndpoint, requestedAmountInSatoshis });
-    this.setState({
-      preImageHash,
-      invoice: depositInvoice || paymentInvoice,
-      invoiceData: depositInvoiceData || paymentInvoiceData,
-    });
+  async beginPolling() {
     // lets poll the contract for the stuff we can verify ourselves
+    console.log('polling starting...');
+    const { preImageHash: passedPreImageHash, contractAddress, httpEndpoint } = this.props;
+    const { paymentInvoice, paymentInvoiceData } = this.state;
+    const preImageHash = this.state.preImageHash || passedPreImageHash;
     this.poller = await monitorSwap({
       preImageHash,
       contractAddress,
+      onError: err => this.setState({ err }),
       updateState: async ({ amount, state }) => {
         if (state === '2') {
           this.setState({ cancelled: true }); // we are done
@@ -52,6 +49,7 @@ export default class InvoiceProcessing extends Component {
             });
             const { settleTx: miningTx } = await getStatus({ httpEndpoint, preImageHash });
             if (miningTx) {
+              // TODO
               // we might not have the settle tx yet... server's not synced yet? anyway, just skip this and retry
               // either way, we need to show the timeout box here if it takes too long...
               this.setState({ mining: true, settleTx: miningTx, miningTx });
@@ -59,11 +57,32 @@ export default class InvoiceProcessing extends Component {
           }
         } else if (!this.state.creationTx) {
           // if we're not created yet, we should wait for the status...
-          const { creationTx: miningTx } = await getStatus({ httpEndpoint, preImageHash });
-          this.setState({ mining: true, creationTx: miningTx, miningTx });
+          // save all the data...
+          try {
+            // TODO, get the deposit tx info
+            const { creationTx: miningTx } = await getStatus({ httpEndpoint, preImageHash });
+            // console.log('got data', );
+            this.setState({ mining: true, creationTx: miningTx, miningTx });
+          } catch (err) {
+            this.setState({ err: err.message });
+          }
         }
       },
     });
+  }
+  async processInvoices() {
+    // request the invoice if we don't have the preImageHash already, show deposit if required
+    if (this.props.preImageHash) {
+      this.setState({ preImageHash: this.props.preImageHash }, this.beginPolling);
+    } else {
+      const { requestedAmountInSatoshis, httpEndpoint, contractAddress } = this.props;
+      const { depositInvoice, paymentInvoice, preImageHash, depositInvoiceData, paymentInvoiceData } = await requestInvoices({ contractAddress, httpEndpoint, requestedAmountInSatoshis });
+      this.setState({
+        preImageHash,
+        invoice: depositInvoice || paymentInvoice,
+        invoiceData: depositInvoiceData || paymentInvoiceData,
+      }, this.beginPolling);
+    }
   }
   renderComplete() {
     return (
@@ -81,7 +100,8 @@ export default class InvoiceProcessing extends Component {
   }
   render() {
     const { requestedAmountInSatoshis } = this.props;
-    const { invoice, miningTx, settleTx, preImageHash, mining, invoiceData, creationTx, completed, cancelled } = this.state;
+    const { err, invoice, miningTx, settleTx, preImageHash, mining, invoiceData, creationTx, completed, cancelled } = this.state;
+    if (err) { return <pre>{JSON.stringify(err)}</pre>}
     if (!invoiceData) { return <Spinner />; }
     if (completed) { return this.renderComplete(); }
     if (cancelled) { return this.renderCancelled(); }

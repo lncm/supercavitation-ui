@@ -51,5 +51,6 @@ export async function requestInvoices({ requestedAmountInSatoshis, contractAddre
 export async function getStatus({ preImageHash, httpEndpoint }) {
   const uri = `${httpEndpoint}/swap?preImageHash=${preImageHash}`;
   const data = await (await fetch(uri)).json();
+  if (data.error) { throw new Error(data.error); }
   return data;
 }

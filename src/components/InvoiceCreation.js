@@ -1,17 +1,20 @@
 import React, { Component } from 'react';
 import Web3 from 'web3';
-import { Button, Callout, NumericInput } from '@blueprintjs/core';
+import { Button, Callout, NumericInput, InputGroup } from '@blueprintjs/core';
 
 import InvoiceProcessing from './InvoiceProcessing';
 import SelfPublish from './SelfPublish';
 
 const { utils: { toBN } } = Web3;
 
+// f7708598fe45f3898a4b43d0a5f2bf337a82a98cba78ae9b2fbf4c3d033cf533
+
 export default class InvoiceFlow extends Component {
   constructor(props) {
     super(props);
     this.state = {};
     this.changeRequestedAmount = this.changeRequestedAmount.bind(this);
+    this.changePreImageHash = this.changePreImageHash.bind(this);
     this.requestInvoice = this.requestInvoice.bind(this);
   }
   changeRequestedAmount(amount) {
@@ -20,7 +23,25 @@ export default class InvoiceFlow extends Component {
   requestInvoice() {
     this.setState({ request: true });
   }
-  renderInput() {
+  changePreImageHash({ target: { value: preImageHash } }) {
+    this.setState({ preImageHash, request: true });
+  }
+  renderCheckExisting() {
+    const { preImageHash } = this.state;
+    return (
+      <Callout title="Check existing swap" icon="info-sign">
+        Enter the <b>preImageHash</b>
+        <InputGroup
+          large
+          leftIcon="code"
+          onChange={this.changePreImageHash}
+          placeholder="Pase PreImageHash"
+          value={preImageHash || ''}
+        />
+      </Callout>
+    );
+  }
+  renderNewInvoice() {
     const { exchangeRate, timeLockBlocks, depositFeeSatoshis, lockedFunds, minAmountSatoshis, balance, rewardWei, supercavitationWei } = this.props;
     const { requestedAmountInSatoshis } = this.state;
     const maxAmount = toBN(balance).sub(toBN(lockedFunds));
@@ -77,6 +98,12 @@ export default class InvoiceFlow extends Component {
     if (request) {
       return <InvoiceProcessing {...this.state} {...this.props} />;
     }
-    return this.renderInput();
+    return (
+      <div>
+        {this.renderNewInvoice()}
+        <br />
+        {this.renderCheckExisting()}
+      </div>
+    );
   }
 }
