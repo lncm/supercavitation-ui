@@ -13,21 +13,33 @@ $margin: 1em;
   margin-top: $margin;
 }
 
+.columns {
+  display: grid;
+  column-gap: $margin;
+  row-gap: $margin;
+  grid-template-columns: auto-fit, minmax(0, 1fr);
+  @media screen and (min-width: $mobileBp) {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  }
+}
+.sections > div {
+  margin: $margin 0;
+}
+
 .trunchate {
   max-width: 100%;
   width: 300px;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: block;
+  td > & {
+    display: inline;
+  }
+  display: inline-block;
   overflow: hidden;
 }
 
-.columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  column-gap: $margin;
-  row-gap: $margin;
-  @media screen and (min-width: $mobileBp) {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
+.scrollx{
+  max-width: 100%;
+  overflow-y: hidden;
+  display: block;
 }

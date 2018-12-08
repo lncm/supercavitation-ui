@@ -1,12 +1,22 @@
 # Supercavitation UI
 
-### Post-Hackathon TODOs
+## Post-Hackathon TODOs
+
+- clean up `processInvoices`
+- renderAccountBalance
+- Verify preimage
+
+## Post-Hackathon DONE
 
 - Use updated server API
 - Complete user flow
-- Verify preimage
 - Verify signatures
+- Clean up components
 - Show invoice data
 - Handle errors
-- Clean up components
 
+## Post-Post Hackathon TODOs
+
+- Sign messages from alice
+- Registry
+- ...

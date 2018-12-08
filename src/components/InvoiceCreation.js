@@ -15,19 +15,22 @@ export default class InvoiceFlow extends Component {
     this.setState({ preImageHash, request: true });
   }
   onRequestNewInvoice(requestedAmountInSatoshis) {
-    this.setState({ requestedAmountInSatoshis });
+    this.setState({ requestedAmountInSatoshis, request: true });
   }
   render() {
     const { offline } = this.props;
-    const { requestedAmountInSatoshis } = this.state;
-    if (requestedAmountInSatoshis) {
+    const { request } = this.state;
+    if (request) {
       return <InvoiceProcessing {...this.state} {...this.props} />;
     }
     return (
-      <div>
-        {!offline && <InvoiceNewInput onSubmit={this.onRequestNewInvoice} {...this.state} {...this.props} />}
-        <br />
-        <InvoiceExistingInput onPaste={this.onPasteExistingPreImage} />
+      <div className="sections">
+        <div>
+          {!offline && <InvoiceNewInput onSubmit={this.onRequestNewInvoice} {...this.state} {...this.props} />}
+        </div>
+        <div>
+          <InvoiceExistingInput onPaste={this.onPasteExistingPreImage} />
+        </div>
       </div>
     );
   }

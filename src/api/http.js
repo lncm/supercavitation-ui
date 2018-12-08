@@ -54,7 +54,7 @@ export async function getStatus({ preImageHash, httpEndpoint, existing, owner })
   try {
     data = await fetchAndVerify([uri], owner);
   } catch (err) {
-    throw new Error(err);
+    throw err;
   }
   if (data.error) {
     throw new Error(`Service error: ${data.error}`);

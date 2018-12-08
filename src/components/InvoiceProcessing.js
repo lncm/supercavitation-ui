@@ -1,11 +1,13 @@
 import React, { Component } from 'react';
-import QRCode from 'qrcode.react';
-import { Callout, Spinner } from '@blueprintjs/core';
+import { Callout, Code, Spinner } from '@blueprintjs/core';
 
 import { requestInvoices, getStatus } from '../api/http';
 import { monitorSwap } from '../api/web3';
 
 import SelfPublish from './SelfPublish';
+import InvoicePaymentRequest from './InvoicePaymentRequest';
+import InvoiceMiningTx from './InvoiceMiningTx';
+import ExplorerLink from './ExplorerLink';
 
 // TODO timeouts...
 
@@ -92,17 +94,21 @@ export default class InvoiceProcessing extends Component {
   renderComplete() {
     const { settleTx } = this.state;
     return (
-      <Callout title="Swap Complete!" intent="success" icon="tick">
-        Congratulations, the swap is settled!
-        {settleTx && <span className="trunchate"><a href={`https://explorer.testnet.rsk.co/tx/${settleTx}`} target="_blank">{settleTx}</a></span>}
-      </Callout>
+      <div>
+        <Callout title="Swap Complete!" intent="success" icon="tick">
+          Congratulations, the swap is settled!
+          {settleTx && <ExplorerLink type="tx" data={settleTx} />}
+        </Callout>
+      </div>
     );
   }
   renderCancelled() {
     return (
-      <Callout title="Swap Canclled!" intent="danger" icon="cross">
-        Sorry, the swap timed out and is cancelled
-      </Callout>
+      <div>
+        <Callout title="Swap Canclled!" intent="danger" icon="cross">
+          Sorry, the swap timed out and is cancelled
+        </Callout>
+      </div>
     );
   }
   render() {
@@ -111,89 +117,31 @@ export default class InvoiceProcessing extends Component {
     if (!ready) { return <Spinner />; }
     if (completed) { return this.renderComplete(); }
     if (cancelled) { return this.renderCancelled(); }
-    const uri = `lightning:${invoice}`;
     const canPublish = amount && amount > 0;
     return (
-      <div>
-        <Callout icon={null} intent="primary" title="Swap preImageHash">
-          <b>Save for future reference</b>
-          <div style={{ overflowY: 'scroll' }}>
-            {preImageHash}
-          </div>
-        </Callout>
-        <br />
-        {(!canPublish && err) && (
-          <Callout intent="danger" title="Error">
-            {err}
-          </Callout>
-        )}
-        {canPublish && (
-          <Callout intent="success" title="Swap is created">
-            For amount <b>{amount}</b>
-          </Callout>
-        )}
-        {(!canPublish && offline) && (
-          <Callout intent="danger" title="Something went wrong">
-            The preImageHash you entered is not recognised
-          </Callout>
-        )}
-        {miningTx && (
-        <Callout
-          intent={mining ? 'warning' : 'success'}
-          title={mining ? 'Mining Transaction' : 'Mined Transaction'}
-        >
-          {mining
-            && (
-            <div>
-              {settleTx
-                ? <div>Bob has published the swap settlement!</div>
-                : <div>Bob is creating the swap!</div>
-            }
-            </div>
-            )
-          }
-          {!mining
-            && (
-            <div>
-              {settleTx
-                ? <div>The swap is settled!</div>
-                : <div>Bob has created the swap and it matches the payment hash; you can safely pay the invoice!</div>
-            }
-            </div>
-            )
-          }
-          <span className="trunchate"><a href={`https://explorer.testnet.rsk.co/tx/${miningTx}`} target="_blank">{miningTx}</a></span>
-          {mining && <div>Please wait a monent for it to be mined...</div>}
-        </Callout>
-        )}
-        {(invoice && !mining) && (
+      <div className="sections">
         <div>
-          <Callout title="Scan or Tap To Pay">
-            <div>This invoice requests <b>{invoiceData.amount}</b> LN satoshis</div>
-            {creationTx
-              ? (
-                <div style={{ marginBottom: '0.5em' }}>
-              Pay this invoice to receive <b>{amount}</b> wei
-                </div>
-              )
-              : (
-                <div style={{ marginBottom: '0.5em' }}>
-              Pay this deposit to generate the swap
-                </div>
-              )
-            }
-            <a href={uri}>
-              <QRCode value={uri} renderAs="svg" style={{ width: '100%', height: 'auto', maxHeight: '50vh' }} />
-              <Callout style={{ overflowY: 'scroll' }}>
-                {uri}
-              </Callout>
-            </a>
+          <Callout>
+            Save this <b>preImageHash</b> for future reference:
+            <Code className="scrollx">{preImageHash}</Code>
           </Callout>
         </div>
-        )}
-        <br />
-        {canPublish && <SelfPublish {...this.state} {...this.props} />}
-        {/* <pre>{JSON.stringify({ state: this.state, props: this.props }, null, 2)}</pre> */}
+        {/* Errors & Mining Status */}
+        <div>
+          {!canPublish && err && <Callout intent="danger" title="Error">{err}</Callout>}
+          {!canPublish && offline && <Callout intent="danger" title="Error">The preImageHash you entered is not recognised</Callout>}
+          {miningTx && <InvoiceMiningTx {...{ settleTx, mining, miningTx }} />}
+        </div>
+        {/* UI for the swap creation */}
+        <div>
+          {offline && canPublish && <Callout intent="success" title="Swap is created">For amount <b>{amount}</b></Callout>}
+          {invoice && !mining && <InvoicePaymentRequest invoice={invoice} invoiceAmount={invoiceData.amount} swapAmountWei={creationTx && amount} />}
+        </div>
+        {/* Self Publish Box */}
+        <div>
+          {canPublish && <SelfPublish {...this.state} {...this.props} />}
+          {/* <pre>{JSON.stringify({ state: this.state, props: this.props }, null, 2)}</pre> */}
+        </div>
       </div>
     );
   }

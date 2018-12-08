@@ -1,12 +1,11 @@
 import React from 'react';
 import { HTMLTable } from '@blueprintjs/core';
-import { explorerUrl } from '../config';
 
-const explorerLink = addr => <a target="_blank" href={`${explorerUrl}/address/${addr}`}>{addr.slice(0, 12)}...</a>;
+import ExplorerLink from './ExplorerLink';
 
 const table = [
-  ['contract', 'Contract Address', ({ contractAddress: a }) => explorerLink(a)],
-  ['owner', 'Contract Owner', ({ owner: a }) => explorerLink(a)],
+  ['contract', 'Contract Address', ({ contractAddress: a }) => <ExplorerLink type="address" data={a} chars={16} />],
+  ['owner', 'Contract Owner', ({ owner: a }) => <ExplorerLink type="address" data={a} chars={16} />],
   ['httpEndpoint', 'Server URL'],
   ['version', 'Server Version'],
   ['timeLockBlocks', 'Time Lock Blocks'],

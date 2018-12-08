@@ -33,17 +33,16 @@ export default class Offering extends Component {
     const { match: { params: { contractAddress } } } = this.props;
     const { err, text, name } = this.state;
     return (
-      <div>
+      <div className="content">
         <Callout
-          style={{ margin: '1em 0' }}
           title={err ? 'Could not connect to swap invoice service...' : name}
           intent={err ? 'danger' : 'success'}
-          icon={err || 'exchange'}
+          icon={err ? 'error' : 'exchange'}
         >
           {err ? 'The server is offline, but you can still settle existing swaps' : text}
         </Callout>
         <div className="columns">
-          {!err && <OfferingTable {...this.state} contractAddress={contractAddress} />}
+          {!err && <div className="sections"><OfferingTable {...this.state} contractAddress={contractAddress} /></div>}
           <InvoiceCreation contractAddress={contractAddress} offline={err} {...this.state} />
         </div>
       </div>

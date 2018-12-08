@@ -2,12 +2,9 @@ import React, { Component } from 'react';
 import { Button, Callout, Text, TextArea } from '@blueprintjs/core';
 
 import { sha256 } from '../util';
-import { explorerUrl } from '../config';
 import { claimFunds } from '../api/web3';
 
-// example
-// efb331cb27fcf819f93bbd5db728aef3d01dd5bb6c4f902921d1c8aa8c984f59 preImage
-// a8116aae8156942df1fd38f23f942577cdd3d5e7cd164a54aded394565b5a427 preImageHash
+import ExplorerLink from './ExplorerLink';
 
 export default class SelfPublish extends Component {
   constructor(props) {
@@ -31,15 +28,9 @@ export default class SelfPublish extends Component {
   renderClaiming() {
     const { txid } = this.state;
     return (
-      <Callout>
-        {!txid
-          ? <div>Publishing Transaction. Please wait...</div>
-          : (
-            <a href={`${explorerUrl}/tx/${txid}`} target="_blank" className="truncate">
-              {txid}
-            </a>
-          )
-        }
+      <Callout title="Publishing" icon="time" intent="warning">
+        <div>Publishing Transaction. Please wait...</div>
+        {txid && <ExplorerLink type="tx" data={txid} />}
       </Callout>
     );
   }
@@ -49,10 +40,10 @@ export default class SelfPublish extends Component {
     const { preImageHash: targetPreImageHash } = this.props;
     const missMatch = targetPreImageHash && targetPreImageHash !== preImageHash;
     return (
-      <Callout title="Self-Publish" icon="send-to">
-        <p>Paste in the preImage below to complete the swap yourself:</p>
+      <Callout title="Self-Publish" icon="send-to" intent="warning">
+        <p>If bob does not settle the swap, you can publish the preImage to complete the swap yourself:</p>
         <Text onChange={this.changeInput} />
-        <TextArea large fill onChange={this.changeInput} />
+        <TextArea large fill onChange={this.changeInput} placeholder="Paste preImage" />
         {preImageHash && (
           <div>
             <br />
