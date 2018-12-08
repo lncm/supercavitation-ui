@@ -1,20 +1,32 @@
 import { decode } from 'lightnode-invoice';
 
-import { getAddress } from './web3';
+import { getAddress, ecRecover } from './web3';
 
 const headers = {
-  // disabled for now to stop preflight request
   Accept: 'application/json',
   'Content-Type': 'application/json',
 };
 
-export async function getOfferingInfo(httpEndpoint) {
-  return (await fetch(`${httpEndpoint}/info`)).json();
+async function fetchAndVerify(params, address) {
+  const json = await (await fetch(...params)).json();
+  // quick and dirty match first
+  if (json.address.toLowerCase() !== address.toLowerCase()) {
+    throw new Error(`Address ${json.address} does not match contract owner ${address}`);
+  }
+  // verify the signature
+  const signer = await ecRecover(json.data, json.signature);
+  if (signer.toLowerCase() !== address.toLowerCase()) {
+    throw new Error('Cannot verify owner signature!');
+  }
+  // return parsed json data
+  return JSON.parse(json.data);
 }
 
-async function postData(uri, data) {
-  return (await fetch(uri, { headers, method: 'POST', body: JSON.stringify(data) })).json();
+async function postData([uri, data], address) {
+  // TODO sign the data...
+  return fetchAndVerify([uri, { headers, method: 'POST', body: JSON.stringify(data) }], address);
 }
+
 const networks = {
   tb: 'testnet',
   bc: 'mainnet',
@@ -24,19 +36,25 @@ const networks = {
 
 function decodeInvoice(invoice) {
   const decoded = decode(invoice);
-  const [preImageHash, memo, cltv, expiry] = decoded.fields.map(({ value }) => value);
+  const fields = decoded.fields.map(({ value }) => value);
   return {
-    memo,
-    expiry,
+    memo: fields[1],
+    expiry: fields[3],
     amount: Math.round(decoded.amount * 1e8), // todo use a bignumber library, as this is dangerous
     network: networks[decoded.network],
-    preImageHash: preImageHash.toString('hex'),
+    preImageHash: fields[0].toString('hex'),
   };
 }
 
-export async function requestInvoices({ requestedAmountInSatoshis, contractAddress, httpEndpoint }) {
+// EXPORTS
+
+export async function getOfferingInfo(httpEndpoint, owner) {
+  return fetchAndVerify([`${httpEndpoint}/info`], owner);
+}
+
+export async function requestInvoices({ requestedAmountInSatoshis, contractAddress, owner, httpEndpoint }) {
   const data = { amount: requestedAmountInSatoshis, customer: await getAddress(), contract: contractAddress };
-  const { paymentInvoice, depositInvoice } = await postData(`${httpEndpoint}/swap`, data);
+  const { paymentInvoice, depositInvoice } = await postData([`${httpEndpoint}/swap`, data], owner);
   // TODO, validate the returned invoice data against blockchain...
   const paymentInvoiceData = decodeInvoice(paymentInvoice);
   return {
@@ -48,12 +66,12 @@ export async function requestInvoices({ requestedAmountInSatoshis, contractAddre
   };
 }
 
-export async function getStatus({ preImageHash, httpEndpoint, existing }) {
+export async function getStatus({ preImageHash, httpEndpoint, existing, owner }) {
   // TODO retry if it fails... ?
   const uri = `${httpEndpoint}/swap?preImageHash=${preImageHash}${existing ? '&existing=1' : ''}`;
   let data;
   try {
-    data = await (await fetch(uri)).json();
+    data = await fetchAndVerify([uri], owner);
   } catch (e) {
     throw new Error('Could not reach swap service');
   }

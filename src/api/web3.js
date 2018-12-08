@@ -33,13 +33,12 @@ function getContract(address) {
 export async function getContractInfo(address) {
   if (!address) { throw new Error('Enter an Address'); }
   const contract = getContract(address);
-  let [httpEndpoint, owner, lockedFunds, balance] = await Promise.all([
-    contract.methods.url().call(),
+  const [httpEndpoint, owner, lockedFunds, balance] = await Promise.all([
+    'http://localhost:8081' || contract.methods.url().call(), // TODO dev mode
     contract.methods.owner().call(),
     contract.methods.lockedFunds().call(),
     web3.eth.getBalance(address),
   ]);
-  httpEndpoint = 'http://localhost:8081'; // dev mode
   return { httpEndpoint, owner, lockedFunds, balance };
 }
 export function monitorSwap({ onError, preImageHash, contractAddress, updateState }) {
@@ -79,4 +78,8 @@ export async function claimFunds({ contractAddress, preImage, preImageHash }) {
   });
   console.log(tx);
   return tx;
+}
+
+export function ecRecover(...args) {
+  return web3.eth.personal.ecRecover(...args);
 }

@@ -22,15 +22,15 @@ export default class InvoiceProcessing extends Component {
   }
   async processInvoices() {
     // request the invoice if we don't have the preImageHash already, show deposit if required
-    const { offline, requestedAmountInSatoshis, httpEndpoint, contractAddress, preImageHash } = this.props;
+    const { offline, owner, requestedAmountInSatoshis, httpEndpoint, contractAddress, preImageHash } = this.props;
     if (offline) {
       this.setState({ preImageHash }, this.beginPolling);
     } else {
       // if we have a preImage passed, we can get the status - otherwise, request invoice...
       try {
         const swap = await (preImageHash
-          ? getStatus({ httpEndpoint, preImageHash, existing: true })
-          : requestInvoices({ contractAddress, httpEndpoint, requestedAmountInSatoshis }));
+          ? getStatus({ httpEndpoint, preImageHash, owner, existing: true })
+          : requestInvoices({ contractAddress, httpEndpoint, requestedAmountInSatoshis, owner }));
         this.setState({
           ...swap,
           invoice: (!swap.creationTx && swap.depositInvoice) || swap.paymentInvoice,
@@ -44,7 +44,7 @@ export default class InvoiceProcessing extends Component {
   }
   async beginPolling() {
     // lets poll the contract for the stuff we can verify ourselves
-    const { offline, contractAddress, httpEndpoint } = this.props;
+    const { offline, owner, contractAddress, httpEndpoint } = this.props;
     const { preImageHash, paymentInvoice, paymentInvoiceData, err: connectionError } = this.state;
     this.poller = await monitorSwap({
       preImageHash,
@@ -72,7 +72,7 @@ export default class InvoiceProcessing extends Component {
             invoice: paymentInvoice,
             invoiceData: paymentInvoiceData,
           });
-          const { settleTx } = await getStatus({ httpEndpoint, preImageHash });
+          const { settleTx } = await getStatus({ httpEndpoint, preImageHash, owner });
           return this.setState({ mining: true, settleTx, miningTx: settleTx });
         } else {
           // do nothing if we're in offline mode...
@@ -83,7 +83,7 @@ export default class InvoiceProcessing extends Component {
             return this.setState({ mining: true, miningTx, creationTx: miningTx });
           }
           // we dont have a creation tx; show the qr code and wait for it...
-          const { creationTx } = await getStatus({ httpEndpoint, preImageHash });
+          const { creationTx } = await getStatus({ httpEndpoint, preImageHash, owner });
           this.setState({ mining: true, creationTx, miningTx: creationTx });
         }
       },
@@ -132,7 +132,7 @@ export default class InvoiceProcessing extends Component {
             For amount <b>{amount}</b>
           </Callout>
         )}
-        {!canPublish && offline && (
+        {(!canPublish && offline) && (
           <Callout intent="danger" title="Something went wrong">
             The preImageHash you entered is not recognised
           </Callout>

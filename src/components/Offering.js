@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { Spinner, Button, HTMLTable } from '@blueprintjs/core';
+import { Callout, Spinner, Button, HTMLTable } from '@blueprintjs/core';
 import { explorerUrl } from '../config';
 
 import { getContractInfo } from '../api/web3';
@@ -37,11 +37,11 @@ export default class Offering extends Component {
     this.setState({ ...await getContractInfo(contractAddress) }, this.getHttpInfo);
   }
   async getHttpInfo() {
-    const { httpEndpoint } = this.state;
+    const { httpEndpoint, owner } = this.state;
     try {
-      this.setState({ ...await getOfferingInfo(httpEndpoint) });
+      this.setState({ ...await getOfferingInfo(httpEndpoint, owner) });
     } catch (err) {
-      this.setState({ err: true });
+      this.setState({ err });
     }
   }
   render() {
@@ -57,6 +57,7 @@ export default class Offering extends Component {
             <div>
               <h2 style={{ marginBottom: 0 }}>{err ? 'Could not connect to swap invoice service...' : name}</h2>
               <h3 style={{ marginTop: 0 }}>{err ? 'The server is offline, but you can still settle existing swaps' : text}</h3>
+              {err && <Callout intent="danger" title="Error">{err.toString()}</Callout>}
               {err ? <InvoiceCreation contractAddress={contractAddress} offline />
                 : (
                   <div className="row">
