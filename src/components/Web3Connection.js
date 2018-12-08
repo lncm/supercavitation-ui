@@ -1,10 +1,8 @@
 import React, { Component } from 'react';
-import { Navbar, Alignment, Button, Text, TextArea } from '@blueprintjs/core';
-
-import Main from './Main';
+import { Button, Text, TextArea } from '@blueprintjs/core';
 
 import { randomMnemonic } from '../config';
-import { getAccountInfo } from '../api/web3';
+import { initializeWeb3 } from '../api/web3';
 
 
 export default class Account extends Component {
@@ -27,22 +25,22 @@ export default class Account extends Component {
     // do some validation...
     try {
       const { mnemonic } = this.state;
-      const accountInfo = await getAccountInfo(mnemonic);
-      if (!accountInfo) { throw new Error('No address'); }
-      this.setState({ error: null, ...accountInfo });
+      const { address } = await initializeWeb3(mnemonic);
+      if (!address) { throw new Error('No address'); }
+      this.setState({ error: null, address });
     } catch (e) {
       this.setState({ error: 'Invalid Mnemonic' });
     }
   }
-  renderAccountBalance() {
-    const { address, balance } = this.state;
-    return (
-      <span className="trunchate" style={{ textAlign: 'right' }}>
-        Hello <b>{address}</b>
-        {balance && <span><br />Your balance is <b>{balance} RSK</b></span>}
-      </span>
-    );
-  }
+  // renderAccountBalance() {
+  //   const { address, balance } = this.state;
+  //   return (
+  //     <span className="trunchate" style={{ textAlign: 'right' }}>
+  //       Hello <b>{address}</b>
+  //       {balance && <span><br />You have <b>{balance}</b> wei</span>}
+  //     </span>
+  //   );
+  // }
   renderLogin() {
     const { mnemonic, error } = this.state;
     return (
@@ -54,24 +52,11 @@ export default class Account extends Component {
         {!mnemonic && <Button rightIcon="arrow-right" intent="success" large text="Or Generate One" onClick={this.generateMnemonic} />}
         {error && `${error}`}
       </div>
-
     );
   }
   render() {
     const { address } = this.state;
     if (!address) { return this.renderLogin(); }
-    return (
-      <div className="container">
-        <Navbar>
-          <Navbar.Group align={Alignment.LEFT}>
-            <Navbar.Heading>Supercavitation Swaps</Navbar.Heading>
-          </Navbar.Group>
-          <Navbar.Group align={Alignment.RIGHT}>
-            {this.renderAccountBalance()}
-          </Navbar.Group>
-        </Navbar>
-        <Main />
-      </div>
-    );
+    return this.props.children;
   }
 }

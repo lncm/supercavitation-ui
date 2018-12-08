@@ -58,33 +58,33 @@ export default class InvoiceProcessing extends Component {
         } else if (state === '1') {
           this.setState({ completed: true }); // we are done
           this.poller.stop();
-        } else if (amount > '0') {
-          // do nothing if we're in offline mode...
-          if (offline) { return null; }
-          // if we are waiting for the settleTx to be mined...
+        // do nothing if we're in offline mode...
+        } else if (amount > '0' && !offline) {
           const { settleTx: miningTx } = this.state;
           if (miningTx) {
-            return this.setState({ mining: true, miningTx, settleTx: miningTx });
+            // if we are waiting for the settleTx to be mined...
+            this.setState({ mining: true, miningTx, settleTx: miningTx });
+          } else {
+            // if we don't have a settle tx, show the qr code and wait for it...
+            this.setState({
+              mining: false,
+              invoice: paymentInvoice,
+              invoiceData: paymentInvoiceData,
+            });
+            const { settleTx } = await getStatus({ httpEndpoint, preImageHash, owner });
+            this.setState({ mining: true, settleTx, miningTx: settleTx });
           }
-          // if we don't have a settle tx, show the qr code and wait for it...
-          this.setState({
-            mining: false,
-            invoice: paymentInvoice,
-            invoiceData: paymentInvoiceData,
-          });
-          const { settleTx } = await getStatus({ httpEndpoint, preImageHash, owner });
-          return this.setState({ mining: true, settleTx, miningTx: settleTx });
-        } else {
-          // do nothing if we're in offline mode...
-          if (offline || connectionError) { return null; }
-          // if we are waiting for the creationTx to be mined...
+        // do nothing if we're in offline mode...
+        } else if (!offline && !connectionError) {
           const { creationTx: miningTx } = this.state;
           if (miningTx) {
-            return this.setState({ mining: true, miningTx, creationTx: miningTx });
+            // if we are waiting for the creationTx to be mined...
+            this.setState({ mining: true, miningTx, creationTx: miningTx });
+          } else {
+            // we dont have a creation tx; show the qr code and wait for it...
+            const { creationTx } = await getStatus({ httpEndpoint, preImageHash, owner });
+            this.setState({ mining: true, creationTx, miningTx: creationTx });
           }
-          // we dont have a creation tx; show the qr code and wait for it...
-          const { creationTx } = await getStatus({ httpEndpoint, preImageHash, owner });
-          this.setState({ mining: true, creationTx, miningTx: creationTx });
         }
       },
     });

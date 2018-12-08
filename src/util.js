@@ -1,3 +1,5 @@
+import { decode } from 'lightnode-invoice';
+
 function hex(buffer) {
   const hexCodes = [];
   const view = new DataView(buffer);
@@ -23,3 +25,21 @@ export function sha256(str) {
   });
 }
 
+const networks = {
+  tb: 'testnet',
+  bc: 'mainnet',
+  crt: 'regression',
+  sm: 'simnet',
+};
+
+export function decodeInvoice(invoice) {
+  const decoded = decode(invoice);
+  const fields = decoded.fields.map(({ value }) => value);
+  return {
+    memo: fields[1],
+    expiry: fields[3],
+    amount: Math.round(decoded.amount * 1e8), // todo use a bignumber library, as this is dangerous
+    network: networks[decoded.network],
+    preImageHash: fields[0].toString('hex'),
+  };
+}

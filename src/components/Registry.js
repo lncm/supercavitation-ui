@@ -14,11 +14,10 @@ export default class Offering extends Component {
             <Button text="Sample Offering" rightIcon="arrow-right" intent="success" />
           </Link>
         </Callout>
-
         <Card>
           <h3>
-            <Link to="/offering">Bob's Swaps</Link>
-            <br/>https://lncm.github.io
+            <Link to="/offering">Bob Swaps</Link>
+            <br />https://lncm.github.io
           </h3>
           <p>
             User interfaces that enable people to interact smoothly with data, ask better questions, and make better decisions.
@@ -27,7 +26,7 @@ export default class Offering extends Component {
         <Card>
           <h3>
             <Link to="/offering">Charles Lightning Swoppa</Link>
-            <br/>https://lncm.github.io
+            <br />https://lncm.github.io
           </h3>
           <p>
             User interfaces that enable people to interact smoothly with data, ask better questions, and make better decisions.
@@ -36,7 +35,7 @@ export default class Offering extends Component {
         <Card>
           <h3>
             <Link to="/offering">Infinity Rule</Link>
-            <br/>https://lncm.github.io
+            <br />https://lncm.github.io
           </h3>
           <p>
             User interfaces that enable people to interact smoothly with data, ask better questions, and make better decisions.

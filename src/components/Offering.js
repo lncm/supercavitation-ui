@@ -1,28 +1,12 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { Callout, Spinner, Button, HTMLTable } from '@blueprintjs/core';
-import { explorerUrl } from '../config';
+import { Callout, Spinner, Button } from '@blueprintjs/core';
 
 import { getContractInfo } from '../api/web3';
 import { getOfferingInfo } from '../api/http';
 
 import InvoiceCreation from './InvoiceCreation';
-
-const explorerLink = addr => <a target="_blank" href={`${explorerUrl}/address/${addr}`}>{addr.slice(0, 12)}...</a>;
-
-const table = [
-  ['contract', 'Contract Address', ({ contractAddress: a }) => explorerLink(a)],
-  ['owner', 'Contract Owner', ({ owner: a }) => explorerLink(a)],
-  ['exchangeRate', 'Rate (Satoshis to Wei)'],
-  ['timeLockBlocks', 'Time Lock Blocks'],
-  ['minAmountSatoshis', 'Min Order (Satoshis)'],
-  ['depositFeeSatoshis', 'Deposit Fee (Satoshis)'],
-  ['rewardWei', 'Close Reward (Wei)'],
-  ['supercavitationWei', 'Supercavitation (Wei)'],
-  ['balance', 'Total Balance (Wei)'],
-  ['lockedFunds', 'Locked Funds (Wei)'],
-  ['version', 'Server Version'],
-];
+import OfferingTable from './OfferingTable';
 
 export default class Offering extends Component {
   constructor(props) {
@@ -41,46 +25,38 @@ export default class Offering extends Component {
     try {
       this.setState({ ...await getOfferingInfo(httpEndpoint, owner) });
     } catch (err) {
-      this.setState({ err });
+      this.setState({ err: true });
     }
+    this.setState({ ready: true });
+  }
+  renderOffering() {
+    const { match: { params: { contractAddress } } } = this.props;
+    const { err, text, name } = this.state;
+    return (
+      <div>
+        <Callout
+          style={{ margin: '1em 0' }}
+          title={err ? 'Could not connect to swap invoice service...' : name}
+          intent={err ? 'danger' : 'success'}
+          icon={err || 'exchange'}
+        >
+          {err ? 'The server is offline, but you can still settle existing swaps' : text}
+        </Callout>
+        <div className="columns">
+          {!err && <OfferingTable {...this.state} contractAddress={contractAddress} />}
+          <InvoiceCreation contractAddress={contractAddress} offline={err} {...this.state} />
+        </div>
+      </div>
+    );
   }
   render() {
-    const { match: { params: { contractAddress } } } = this.props;
-    const { text, name, err } = this.state;
+    const { ready } = this.state;
     return (
       <div>
         <Link to="/registry">
           <Button text="Back to Registry" icon="arrow-left" />
         </Link>
-        {(!text && !err) ? <Spinner />
-          : (
-            <div>
-              <h2 style={{ marginBottom: 0 }}>{err ? 'Could not connect to swap invoice service...' : name}</h2>
-              <h3 style={{ marginTop: 0 }}>{err ? 'The server is offline, but you can still settle existing swaps' : text}</h3>
-              {err && <Callout intent="danger" title="Error">{err.toString()}</Callout>}
-              {err ? <InvoiceCreation contractAddress={contractAddress} offline />
-                : (
-                  <div className="row">
-                    <div>
-                      <HTMLTable bordered condensed striped>
-                        <tbody>
-                          {table.map(r => (
-                            <tr key={r[0]}>
-                              <th>{r[1]}</th>
-                              <td>{(r[2] && r[2]({ ...this.state, contractAddress })) || this.state[r[0]]}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </HTMLTable>
-                    </div>
-                    <div>
-                      <InvoiceCreation contractAddress={contractAddress} {...this.state} />
-                    </div>
-                  </div>
-                )
-              }
-            </div>
-          )}
+        {ready ? this.renderOffering() : <Spinner />}
       </div>
     );
   }
