@@ -50,8 +50,7 @@ export default class SelfPublish extends Component {
     const missMatch = targetPreImageHash && targetPreImageHash !== preImageHash;
     return (
       <Callout title="Self-Publish" icon="send-to">
-        <p>If the swap is created, so you can publish the preImage at any time using the form below, or wait for the swap provider to do so.</p>
-        <p>Paste in your pre-image below to complete the swap yourself:</p>
+        <p>Paste in the preImage below to complete the swap yourself:</p>
         <Text onChange={this.changeInput} />
         <TextArea large fill onChange={this.changeInput} />
         {preImageHash && (

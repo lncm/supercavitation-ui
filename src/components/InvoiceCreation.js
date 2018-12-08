@@ -29,13 +29,13 @@ export default class InvoiceFlow extends Component {
   renderCheckExisting() {
     const { preImageHash } = this.state;
     return (
-      <Callout title="Check existing swap" icon="info-sign">
-        Enter the <b>preImageHash</b>
+      <Callout title="Settle Existing Swap" icon="automatic-updates">
+        Enter the <b>preImageHash</b> of an existing swap
         <InputGroup
           large
           leftIcon="code"
           onChange={this.changePreImageHash}
-          placeholder="Pase PreImageHash"
+          placeholder="Pase preImageHash"
           value={preImageHash || ''}
         />
       </Callout>
@@ -95,13 +95,13 @@ export default class InvoiceFlow extends Component {
   }
   render() {
     const { request } = this.state;
+    const { offline } = this.props;
     if (request) {
       return <InvoiceProcessing {...this.state} {...this.props} />;
     }
     return (
       <div>
-        {this.renderNewInvoice()}
-        <br />
+        {!offline && this.renderNewInvoice()}
         {this.renderCheckExisting()}
       </div>
     );

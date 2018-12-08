@@ -48,9 +48,24 @@ export async function requestInvoices({ requestedAmountInSatoshis, contractAddre
   };
 }
 
-export async function getStatus({ preImageHash, httpEndpoint }) {
-  const uri = `${httpEndpoint}/swap?preImageHash=${preImageHash}`;
-  const data = await (await fetch(uri)).json();
-  if (data.error) { throw new Error(data.error); }
+export async function getStatus({ preImageHash, httpEndpoint, existing }) {
+  // TODO retry if it fails... ?
+  const uri = `${httpEndpoint}/swap?preImageHash=${preImageHash}${existing ? '&existing=1' : ''}`;
+  let data;
+  try {
+    data = await (await fetch(uri)).json();
+  } catch (e) {
+    throw new Error('Could not reach swap service');
+  }
+  if (data.error) {
+    throw new Error(`Service error: ${data.error}`);
+  }
+  if (existing) {
+    return {
+      ...data,
+      paymentInvoiceData: decodeInvoice(data.paymentInvoice),
+      depositInvoiceData: data.depositInvoice && decodeInvoice(data.depositInvoice),
+    };
+  }
   return data;
 }

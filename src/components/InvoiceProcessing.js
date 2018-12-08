@@ -7,32 +7,51 @@ import { monitorSwap } from '../api/web3';
 
 import SelfPublish from './SelfPublish';
 
-// import Timeout from './Timeout';
+// TODO timeouts...
 
 export default class InvoiceProcessing extends Component {
   constructor(props) {
     super(props);
-    // this.state = { timeout: true };
     this.state = { };
   }
   componentDidMount() {
     this.processInvoices();
   }
   componentWillUnmount() {
-    this.poller.stop();
+    if (this.poller) { this.poller.stop(); }
   }
-  // TODO unmount stop polling!
+  async processInvoices() {
+    // request the invoice if we don't have the preImageHash already, show deposit if required
+    const { offline, requestedAmountInSatoshis, httpEndpoint, contractAddress, preImageHash } = this.props;
+    if (offline) {
+      this.setState({ preImageHash }, this.beginPolling);
+    } else {
+      // if we have a preImage passed, we can get the status - otherwise, request invoice...
+      try {
+        const swap = await (preImageHash
+          ? getStatus({ httpEndpoint, preImageHash, existing: true })
+          : requestInvoices({ contractAddress, httpEndpoint, requestedAmountInSatoshis }));
+        this.setState({
+          ...swap,
+          invoice: (!swap.creationTx && swap.depositInvoice) || swap.paymentInvoice,
+          invoiceData: (!swap.creationTx && swap.depositInvoiceData) || swap.paymentInvoiceData,
+        }, this.beginPolling);
+      } catch (err) {
+        // show that bob's gone offline
+        this.setState({ err: err.message, preImageHash }, this.beginPolling);
+      }
+    }
+  }
   async beginPolling() {
     // lets poll the contract for the stuff we can verify ourselves
-    console.log('polling starting...');
-    const { preImageHash: passedPreImageHash, contractAddress, httpEndpoint } = this.props;
-    const { paymentInvoice, paymentInvoiceData } = this.state;
-    const preImageHash = this.state.preImageHash || passedPreImageHash;
+    const { offline, contractAddress, httpEndpoint } = this.props;
+    const { preImageHash, paymentInvoice, paymentInvoiceData, err: connectionError } = this.state;
     this.poller = await monitorSwap({
       preImageHash,
       contractAddress,
-      onError: err => this.setState({ err }),
+      onError: err => this.setState({ err: err.message, ready: true }),
       updateState: async ({ amount, state }) => {
+        this.setState({ amount, ready: true });
         if (state === '2') {
           this.setState({ cancelled: true }); // we are done
           this.poller.stop();
@@ -40,54 +59,42 @@ export default class InvoiceProcessing extends Component {
           this.setState({ completed: true }); // we are done
           this.poller.stop();
         } else if (amount > '0') {
-          // the swap is created...
-          if (!this.state.settleTx) {
-            this.setState({
-              invoice: paymentInvoice,
-              invoiceData: paymentInvoiceData,
-              mining: false,
-            });
-            const { settleTx: miningTx } = await getStatus({ httpEndpoint, preImageHash });
-            if (miningTx) {
-              // TODO
-              // we might not have the settle tx yet... server's not synced yet? anyway, just skip this and retry
-              // either way, we need to show the timeout box here if it takes too long...
-              this.setState({ mining: true, settleTx: miningTx, miningTx });
-            }
+          // do nothing if we're in offline mode...
+          if (offline) { return null; }
+          // if we are waiting for the settleTx to be mined...
+          const { settleTx: miningTx } = this.state;
+          if (miningTx) {
+            return this.setState({ mining: true, miningTx, settleTx: miningTx });
           }
-        } else if (!this.state.creationTx) {
-          // if we're not created yet, we should wait for the status...
-          // save all the data...
-          try {
-            // TODO, get the deposit tx info
-            const { creationTx: miningTx } = await getStatus({ httpEndpoint, preImageHash });
-            // console.log('got data', );
-            this.setState({ mining: true, creationTx: miningTx, miningTx });
-          } catch (err) {
-            this.setState({ err: err.message });
+          // if we don't have a settle tx, show the qr code and wait for it...
+          this.setState({
+            mining: false,
+            invoice: paymentInvoice,
+            invoiceData: paymentInvoiceData,
+          });
+          const { settleTx } = await getStatus({ httpEndpoint, preImageHash });
+          return this.setState({ mining: true, settleTx, miningTx: settleTx });
+        } else {
+          // do nothing if we're in offline mode...
+          if (offline || connectionError) { return null; }
+          // if we are waiting for the creationTx to be mined...
+          const { creationTx: miningTx } = this.state;
+          if (miningTx) {
+            return this.setState({ mining: true, miningTx, creationTx: miningTx });
           }
+          // we dont have a creation tx; show the qr code and wait for it...
+          const { creationTx } = await getStatus({ httpEndpoint, preImageHash });
+          this.setState({ mining: true, creationTx, miningTx: creationTx });
         }
       },
     });
   }
-  async processInvoices() {
-    // request the invoice if we don't have the preImageHash already, show deposit if required
-    if (this.props.preImageHash) {
-      this.setState({ preImageHash: this.props.preImageHash }, this.beginPolling);
-    } else {
-      const { requestedAmountInSatoshis, httpEndpoint, contractAddress } = this.props;
-      const { depositInvoice, paymentInvoice, preImageHash, depositInvoiceData, paymentInvoiceData } = await requestInvoices({ contractAddress, httpEndpoint, requestedAmountInSatoshis });
-      this.setState({
-        preImageHash,
-        invoice: depositInvoice || paymentInvoice,
-        invoiceData: depositInvoiceData || paymentInvoiceData,
-      }, this.beginPolling);
-    }
-  }
   renderComplete() {
+    const { settleTx } = this.state;
     return (
       <Callout title="Swap Complete!" intent="success" icon="tick">
         Congratulations, the swap is settled!
+        {settleTx && <span className="trunchate"><a href={`https://explorer.testnet.rsk.co/tx/${settleTx}`} target="_blank">{settleTx}</a></span>}
       </Callout>
     );
   }
@@ -99,15 +106,37 @@ export default class InvoiceProcessing extends Component {
     );
   }
   render() {
-    const { requestedAmountInSatoshis } = this.props;
-    const { err, invoice, miningTx, settleTx, preImageHash, mining, invoiceData, creationTx, completed, cancelled } = this.state;
-    if (err) { return <pre>{JSON.stringify(err)}</pre>}
-    if (!invoiceData) { return <Spinner />; }
+    const { offline } = this.props;
+    const { err, ready, amount, invoice, miningTx, settleTx, preImageHash, mining, invoiceData, creationTx, completed, cancelled } = this.state;
+    if (!ready) { return <Spinner />; }
     if (completed) { return this.renderComplete(); }
     if (cancelled) { return this.renderCancelled(); }
     const uri = `lightning:${invoice}`;
+    const canPublish = amount && amount > 0;
     return (
       <div>
+        <Callout icon={null} intent="primary" title="Swap preImageHash">
+          <b>Save for future reference</b>
+          <div style={{ overflowY: 'scroll' }}>
+            {preImageHash}
+          </div>
+        </Callout>
+        <br />
+        {(!canPublish && err) && (
+          <Callout intent="danger" title="Error">
+            {err}
+          </Callout>
+        )}
+        {canPublish && (
+          <Callout intent="success" title="Swap is created">
+            For amount <b>{amount}</b>
+          </Callout>
+        )}
+        {!canPublish && offline && (
+          <Callout intent="danger" title="Something went wrong">
+            The preImageHash you entered is not recognised
+          </Callout>
+        )}
         {miningTx && (
         <Callout
           intent={mining ? 'warning' : 'success'}
@@ -133,7 +162,6 @@ export default class InvoiceProcessing extends Component {
             </div>
             )
           }
-
           <span className="trunchate"><a href={`https://explorer.testnet.rsk.co/tx/${miningTx}`} target="_blank">{miningTx}</a></span>
           {mining && <div>Please wait a monent for it to be mined...</div>}
         </Callout>
@@ -145,7 +173,7 @@ export default class InvoiceProcessing extends Component {
             {creationTx
               ? (
                 <div style={{ marginBottom: '0.5em' }}>
-              Pay this invoice to receive <b>{requestedAmountInSatoshis}</b> RBTC satoshis
+              Pay this invoice to receive <b>{amount}</b> wei
                 </div>
               )
               : (
@@ -160,16 +188,12 @@ export default class InvoiceProcessing extends Component {
                 {uri}
               </Callout>
             </a>
-            <Callout style={{ overflowY: 'scroll' }}>
-              Payment Hash (save for reference): {preImageHash}
-            </Callout>
           </Callout>
         </div>
         )}
         <br />
-        <SelfPublish {...this.state} {...this.props} />
-        {/* {((creationTx && !mining) || settleTx) && <SelfPublish {...this.state} {...this.props} />} */}
-        <pre>{JSON.stringify({ state: this.state, props: this.props }, null, 2)}</pre>
+        {canPublish && <SelfPublish {...this.state} {...this.props} />}
+        {/* <pre>{JSON.stringify({ state: this.state, props: this.props }, null, 2)}</pre> */}
       </div>
     );
   }
