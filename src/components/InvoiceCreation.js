@@ -24,7 +24,7 @@ export default class InvoiceFlow extends Component {
       return <InvoiceProcessing {...this.state} {...this.props} />;
     }
     return (
-      <div className="sections">
+      <div>
         <div>
           {!offline && <InvoiceNewInput onSubmit={this.onRequestNewInvoice} {...this.state} {...this.props} />}
         </div>

@@ -42,7 +42,7 @@ export default class Offering extends Component {
           {err ? 'The server is offline, but you can still settle existing swaps' : text}
         </Callout>
         <div className="columns">
-          {!err && <div className="sections"><OfferingTable {...this.state} contractAddress={contractAddress} /></div>}
+          {!err && <OfferingTable {...this.state} contractAddress={contractAddress} />}
           <InvoiceCreation contractAddress={contractAddress} offline={err} {...this.state} />
         </div>
       </div>

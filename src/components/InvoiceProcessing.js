@@ -119,7 +119,7 @@ export default class InvoiceProcessing extends Component {
     if (cancelled) { return this.renderCancelled(); }
     const canPublish = amount && amount > 0;
     return (
-      <div className="sections">
+      <div>
         <div>
           <Callout>
             Save this <b>preImageHash</b> for future reference:

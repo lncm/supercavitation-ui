@@ -15,15 +15,16 @@ $margin: 1em;
 
 .columns {
   display: grid;
+  margin-top: $margin;
   column-gap: $margin;
   row-gap: $margin;
   grid-template-columns: auto-fit, minmax(0, 1fr);
   @media screen and (min-width: $mobileBp) {
     grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   }
-}
-.sections > div {
-  margin: $margin 0;
+  > div > div {
+    margin-bottom: $margin;
+  }
 }
 
 .trunchate {
