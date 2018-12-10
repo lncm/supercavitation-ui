@@ -15,88 +15,97 @@ export default class InvoiceProcessing extends Component {
   constructor(props) {
     super(props);
     this.state = { };
+    this.handleContractStateUpdate = this.handleContractStateUpdate.bind(this);
   }
   componentDidMount() {
-    this.processInvoices();
+    const { offline, preImageHash } = this.props;
+    // if we are offline we can skip talking to bob, and just go straight to polling the contract
+    if (offline) {
+      this.setState({ preImageHash }, this.pollContract);
+    } else {
+      // otherwise, get the invoice data from bob first
+      this.getInvoices();
+    }
   }
   componentWillUnmount() {
     if (this.poller) { this.poller.stop(); }
   }
-  async processInvoices() {
-    // request the invoice if we don't have the preImageHash already, show deposit if required
-    const { offline, owner, requestedAmountInSatoshis, httpEndpoint, contractAddress, preImageHash } = this.props;
-    if (offline) {
-      this.setState({ preImageHash }, this.beginPolling);
-    } else {
-      // if we have a preImage passed, we can get the status - otherwise, request invoice...
-      try {
-        const swap = await (preImageHash
+  async getInvoices() {
+    const { owner, requestedAmountInSatoshis, httpEndpoint, contractAddress, preImageHash } = this.props;
+    try {
+      const swap = await (
+        preImageHash
+          // if we already have the preImageHash, request the existing invoice
           ? getStatus({ httpEndpoint, preImageHash, owner, existing: true })
-          : requestInvoices({ contractAddress, httpEndpoint, requestedAmountInSatoshis, owner }));
-        this.setState({
-          ...swap,
-          invoice: (!swap.creationTx && swap.depositInvoice) || swap.paymentInvoice,
-          invoiceData: (!swap.creationTx && swap.depositInvoiceData) || swap.paymentInvoiceData,
-        }, this.beginPolling);
-      } catch (err) {
-        // show that bob's gone offline
-        this.setState({ err: err.message, preImageHash }, this.beginPolling);
-      }
+          // otherwise, submit a request to get new invoices from bob
+          : requestInvoices({ contractAddress, httpEndpoint, requestedAmountInSatoshis, owner })
+      );
+      // if we don't need to pay the deposit (or already paid it), we can skip showing the deposit invoice
+      const invoice = (!swap.creationTx && swap.depositInvoice) || swap.paymentInvoice;
+      const invoiceData = (!swap.creationTx && swap.depositInvoiceData) || swap.paymentInvoiceData;
+      // show the invoice data in the UI
+      this.setState({ ...swap, invoice, invoiceData }, this.pollContract);
+    } catch (err) {
+      // something went wrong on bob's side (or connection error), so let's show the error
+      this.setState({ err: err.message, preImageHash }, this.pollContract);
     }
   }
-  async beginPolling() {
+  async pollContract() {
     // lets poll the contract for the stuff we can verify ourselves
-    const { offline, owner, contractAddress, httpEndpoint } = this.props;
-    const { preImageHash, paymentInvoice, paymentInvoiceData, err: connectionError } = this.state;
     this.poller = await monitorSwap({
-      preImageHash,
-      contractAddress,
+      preImageHash: this.state.preImageHash,
+      contractAddress: this.props.contractAddress,
+      updateState: this.handleContractStateUpdate,
       onError: err => this.setState({ err: err.message, ready: true }),
-      updateState: async ({ amount, state }) => {
-        this.setState({ amount, ready: true });
-        if (state === '2') {
-          this.setState({ cancelled: true }); // we are done
-          this.poller.stop();
-        } else if (state === '1') {
-          this.setState({ completed: true }); // we are done
-          this.poller.stop();
-        // do nothing if we're in offline mode...
-        } else if (amount > '0' && !offline) {
-          const { settleTx: miningTx } = this.state;
-          if (miningTx) {
-            // if we are waiting for the settleTx to be mined...
-            this.setState({ mining: true, miningTx, settleTx: miningTx });
-          } else {
-            // if we don't have a settle tx, show the qr code and wait for it...
-            this.setState({
-              mining: false,
-              invoice: paymentInvoice,
-              invoiceData: paymentInvoiceData,
-            });
-            const { settleTx } = await getStatus({ httpEndpoint, preImageHash, owner });
-            this.setState({ mining: true, settleTx, miningTx: settleTx });
-          }
-        // do nothing if we're in offline mode...
-        } else if (!offline && !connectionError) {
-          const { creationTx: miningTx } = this.state;
-          if (miningTx) {
-            // if we are waiting for the creationTx to be mined...
-            this.setState({ mining: true, miningTx, creationTx: miningTx });
-          } else {
-            // we dont have a creation tx; show the qr code and wait for it...
-            const { creationTx } = await getStatus({ httpEndpoint, preImageHash, owner });
-            this.setState({ mining: true, creationTx, miningTx: creationTx });
-          }
-        }
-      },
     });
   }
+  async handleContractStateUpdate({ amount, state }) {
+    const { offline, owner, httpEndpoint } = this.props;
+    const { preImageHash, paymentInvoice, paymentInvoiceData, err: connectionError } = this.state;
+    // always set the value + ready status (to hide the spinner)
+    this.setState({ amount, ready: true });
+    // state 'cancelled': we can stop now
+    if (state === '2') {
+      this.setState({ cancelled: true });
+      return this.poller.stop();
+    }
+    // state 'completed': we can stop now
+    if (state === '1') {
+      this.setState({ completed: true });
+      return this.poller.stop();
+    }
+    // the remaining logic deals with invoices, which we don't care about if bob is offline
+    if (offline) { return null; }
+    // stage 'created': we want to show the settle invoice and wait for it's tx to be mined
+    if (amount > '0') {
+      const { settleTx } = this.state;
+      // if we already have the settleTx, we can just wait; the poller will update the state when it's mined...
+      if (settleTx) { return null; }
+      // if we don't have a settle tx, show the qr code...
+      this.setState({ mining: false, invoice: paymentInvoice, invoiceData: paymentInvoiceData });
+      // and wait for it to be mined...
+      const { settleTx: miningTx } = await getStatus({ httpEndpoint, preImageHash, owner });
+      // now we can update the ui with the new mining tx and we loop back
+      return this.setState({ mining: true, miningTx, settleTx: miningTx });
+    }
+    // at this point we don't have anything on-chain to help us, so we are relying on bob
+    // only continue if there's no connection error with bob
+    if (!connectionError) {
+      const { creationTx } = this.state;
+      // if we already have the creationTx, we can just wait
+      if (creationTx) { return null; }
+      // we dont have a creation tx yet; show the qr code and wait for it...
+      const { miningTx } = await getStatus({ httpEndpoint, preImageHash, owner });
+      return this.setState({ mining: true, miningTx, creationTx: miningTx });
+    }
+    return null;
+  }
   renderComplete() {
-    const { settleTx } = this.state;
+    const { amount, settleTx } = this.state;
     return (
       <div>
         <Callout title="Swap Complete!" intent="success" icon="tick">
-          Congratulations, the swap is settled!
+          Congratulations, the swap is settled for <b>{amount}</b> wei!
           {settleTx && <ExplorerLink type="tx" data={settleTx} />}
         </Callout>
       </div>
