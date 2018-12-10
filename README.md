@@ -2,12 +2,12 @@
 
 ## Post-Hackathon TODOs
 
-- clean up `processInvoices`
 - renderAccountBalance
-- Verify preimage
 
 ## Post-Hackathon DONE
 
+- clean up `processInvoices`
+- Do not trust preImage
 - Use updated server API
 - Complete user flow
 - Verify signatures
@@ -19,4 +19,6 @@
 
 - Sign messages from alice
 - Registry
+- Timeouts
+- Testing for edge cases
 - ...
