@@ -34,8 +34,8 @@ export default class InvoiceFlow extends Component {
     const depositFeeInWei = toBN(depositFeeSatoshis).pow(toBN(10));
     const amountAfterFeesWei = amountOfferedInWei.sub(toBN(rewardWei)).sub(toBN(supercavitationWei)).sub(toBN(depositFeeInWei));
     const badAmount = amountOfferedInWei.gt(maxAmount) || amountOfferedInWei.lt(minAmount);
-    const min = Math.ceil(minAmount.toNumber() / 1e10);
-    const max = Math.floor(maxAmount.toNumber() / 1e10);
+    const min = Math.ceil(minAmount.div(toBN(1e10)).toNumber());
+    const max = Math.floor(maxAmount.div(toBN(1e10)).toNumber());
     return (
       <Callout title="Request New Invoice" intent="primary" icon="cell-tower">
         Enter amount of <b>satoshis</b> you wish to spend
