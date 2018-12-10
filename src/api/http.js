@@ -35,7 +35,7 @@ export async function getOfferingInfo(httpEndpoint, owner) {
 
 export async function requestInvoices({ requestedAmountInSatoshis, contractAddress, owner, httpEndpoint }) {
   const data = { amount: requestedAmountInSatoshis, customer: await getAddress(), contract: contractAddress };
-  const { paymentInvoice, depositInvoice } = await postData([`${httpEndpoint}/swap`, data], owner);
+  const { paymentInvoice, depositInvoice, preImageHash } = await postData([`${httpEndpoint}/swap`, data], owner);
   // TODO, validate the returned invoice data against blockchain...
   const paymentInvoiceData = decodeInvoice(paymentInvoice);
   return {
@@ -43,7 +43,8 @@ export async function requestInvoices({ requestedAmountInSatoshis, contractAddre
     depositInvoiceData: depositInvoice && decodeInvoice(depositInvoice),
     paymentInvoice,
     paymentInvoiceData,
-    preImageHash: paymentInvoiceData.preImageHash,
+    // IMPORTANT in dev mode we do not use the actual preImageHash
+    preImageHash: process.env.GANACHE ? preImageHash : paymentInvoiceData.preImageHash,
   };
 }
 
