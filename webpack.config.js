@@ -131,7 +131,7 @@ const config = {
 
   plugins: [
     new HtmlWebpackPlugin({ template: 'index.html' }),
-    new webpack.DefinePlugin({ 'process.env': JSON.stringify({ GANACHE: process.env.GANACHE, DEV: true }) }),
+    new webpack.DefinePlugin({ 'process.env': JSON.stringify({ GANACHE: process.env.GANACHE, DEV: process.env.DEV }) }),
     new webpack.NamedModulesPlugin(),
     new webpack.LoaderOptionsPlugin({
       test: /\.jsx?$/,
