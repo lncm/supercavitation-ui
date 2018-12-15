@@ -7,41 +7,25 @@ export default class Offering extends Component {
     return (
       <div>
         <Callout title="Welcome to Supercavitation Swap Demo">
-          Blah blah blah blah, this will be a registry
-          <br />
-          <br />
-          <Link to="/offering/">
-            <Button text="Sample Offering" rightIcon="arrow-right" intent="success" />
-          </Link>
+          Here are some sample swap offering contracts. This page will pull the contract addresses from an on-chain registry.
         </Callout>
         <Card>
           <h3>
-            <Link to="/offering">Bob Swaps</Link>
-            <br />https://lncm.github.io
+            <Link to="/offering/0x8b3f82945f90e18cc235f829b59828d6ab4ad6e1">Bob</Link>
+            <br />ARM, Paris
           </h3>
-          <p>
-            User interfaces that enable people to interact smoothly with data, ask better questions, and make better decisions.
-          </p>
         </Card>
         <Card>
           <h3>
-            <Link to="/offering">Charles Lightning Swoppa</Link>
-            <br />https://lncm.github.io
+            <Link to="/offering/0x04cab45225e29b81ceb748890887b3cba65acd01">Charlie</Link>
+            <br />x64, London
           </h3>
-          <p>
-            User interfaces that enable people to interact smoothly with data, ask better questions, and make better decisions.
-          </p>
         </Card>
         <Card>
           <h3>
-            <Link to="/offering">Infinity Rule</Link>
-            <br />https://lncm.github.io
+            <Link to="/offering/0x04cab45225e29b81ceb748890887b3cba65acd02">Some Offline Service</Link>
           </h3>
-          <p>
-            User interfaces that enable people to interact smoothly with data, ask better questions, and make better decisions.
-          </p>
         </Card>
-
       </div>
     );
   }

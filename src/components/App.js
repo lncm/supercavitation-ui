@@ -2,7 +2,7 @@ import React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';
 import { Navbar, Alignment } from '@blueprintjs/core';
 
-import { appTitle, devContract } from '../config';
+import { appTitle } from '../config';
 
 import Web3Connection from './Web3Connection';
 import Registry from './Registry';
@@ -25,7 +25,7 @@ export default () => {
           <Switch>
             <Route path="/registry/:contractAddress" component={Registry} />
             <Route path="/offering/:contractAddress" component={Offering} />
-            <Redirect from="/offering" to={`/offering/${devContract}`} />
+            <Redirect from="/offering" to="/registry" />
             <Redirect from="/registry" to="/registry/0x1234" />
             <Redirect from="/" to="/registry/0x1234" />
           </Switch>

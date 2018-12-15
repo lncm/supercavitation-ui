@@ -2,7 +2,11 @@
 
 ## Post-Hackathon TODOs
 
+- use updated 'stages' 
+- show better error message for mis-signed account
 - renderAccountBalance
+- disable auto-populate alice
+- deploy to ipfs
 
 ## Post-Hackathon DONE
 

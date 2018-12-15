@@ -1,15 +1,15 @@
 /* eslint-disable global-require */
 
 // TODO find a better way to do this... :)
-let devContractAddress = '0xc62f1ce7aba9990000a71d7d99791026373e7021';
-if (process.env.GANACHE) {
-  const { networks } = require('@lncm/supercavitation-contracts/build/contracts/SwapOffering.json');
-  devContractAddress = networks[Object.keys(networks).pop()].address;
-}
+// let devContractAddress = '0xc62f1ce7aba9990000a71d7d99791026373e7021';
+// if (process.env.GANACHE) {
+//   const { networks } = require('@lncm/supercavitation-contracts/build/contracts/SwapOffering.json');
+//   devContractAddress = networks[Object.keys(networks).pop()].address;
+// }
 
 export const devMode = process.env.DEV;
-export const devServer = 'http://localhost:8081';
-export const devContract = devContractAddress;
+export const devServer = 'https://charlie.lncm.io';
+// export const devContract = devContractAddress;
 
 export const appTitle = 'Supercavitation Swaps';
 
