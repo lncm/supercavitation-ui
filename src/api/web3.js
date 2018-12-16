@@ -45,6 +45,11 @@ export async function getContractInfo(address) {
   ]);
   return { httpEndpoint, owner, lockedFunds, balance };
 }
+
+export async function getBalance(address) {
+  return web3.eth.getBalance(address);
+}
+
 export function monitorSwap({ onError, preImageHash, contractAddress, updateState }) {
   const contract = getContract(contractAddress);
   const hash = `0x${preImageHash}`;

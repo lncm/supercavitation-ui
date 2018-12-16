@@ -5,23 +5,24 @@ import { Navbar, Alignment } from '@blueprintjs/core';
 import { appTitle } from '../config';
 
 import Web3Connection from './Web3Connection';
+import AccountBalance from './AccountBalance';
 import Registry from './Registry';
 import Offering from './Offering';
+
 
 export default () => {
   return (
     <div className="container">
-      <Navbar>
-        <Navbar.Group align={Alignment.LEFT}>
-          <Navbar.Heading>{appTitle}</Navbar.Heading>
-        </Navbar.Group>
-        <Navbar.Group align={Alignment.RIGHT}>
-            User info here
-          {/* {this.renderAccountBalance()} */}
-        </Navbar.Group>
-      </Navbar>
-      <div className="content">
-        <Web3Connection>
+      <Web3Connection>
+        <Navbar>
+          <Navbar.Group align={Alignment.LEFT}>
+            <Navbar.Heading>{appTitle}</Navbar.Heading>
+          </Navbar.Group>
+          <Navbar.Group align={Alignment.RIGHT}>
+            <AccountBalance />
+          </Navbar.Group>
+        </Navbar>
+        <div className="content">
           <Switch>
             <Route path="/registry/:contractAddress" component={Registry} />
             <Route path="/offering/:contractAddress" component={Offering} />
@@ -29,8 +30,8 @@ export default () => {
             <Redirect from="/registry" to="/registry/0x1234" />
             <Redirect from="/" to="/registry/0x1234" />
           </Switch>
-        </Web3Connection>
-      </div>
+        </div>
+      </Web3Connection>
     </div>
   );
 };
