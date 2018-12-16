@@ -38,7 +38,7 @@ export default class InvoiceFlow extends Component {
     const badAmount = !requestedAmountInSatoshis || requestedAmountInSatoshis > max || requestedAmountInSatoshis < min;
     return (
       <Callout title="Request New Invoice" intent="primary" icon="cell-tower">
-        Enter amount of <b>satoshis</b> you wish to spend
+        Enter amount of <b>satoshis</b> you wish to spend.
         <NumericInput
           placeholder="Enter Amount"
           min={min}
@@ -55,7 +55,13 @@ export default class InvoiceFlow extends Component {
         />
         <div style={{ paddingBottom: '0.5em' }} />
         {badAmount
-          ? <div>Enter an integer between {min} and {max}</div>
+          ? (
+            <div>
+              Enter an integer between {min} and {max}
+              <br />
+              <b style={{ color: 'red' }}>DEMO:</b> Do not send real assets! Also, do not enter a large value, or we need to top it up.
+            </div>
+          )
           : <Button large fill intent="primary" icon="tick-circle" type="submit" onClick={this.onSubmit} text="Submit" />
         }
         {!badAmount && (

@@ -40,7 +40,7 @@ export default class Web3Connection extends Component {
         <Text value={mnemonic} onChange={this.changeInput} />
         <TextArea large fill onChange={this.changeInput} value={mnemonic} />
         <br /><br />
-        {!mnemonic && <Button rightIcon="arrow-right" intent="success" large text="Or Generate One" onClick={this.generateMnemonic} />}
+        {!mnemonic && <Button rightIcon="arrow-right" intent="success" large text="Or generate a 'random' one (Alice)" onClick={this.generateMnemonic} />}
         {err && <Callout intent="danger" title="Error">{err}</Callout>}
       </div>
     );
