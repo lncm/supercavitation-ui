@@ -43,4 +43,7 @@ $margin: 1em;
   max-width: 100%;
   overflow-y: hidden;
   display: block;
+  td > & {
+    max-width: 150px;
+  }
 }

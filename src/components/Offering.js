@@ -25,7 +25,7 @@ export default class Offering extends Component {
     try {
       this.setState({ ...await getOfferingInfo(httpEndpoint, owner) });
     } catch (err) {
-      this.setState({ err: true });
+      this.setState({ err: err.message });
     }
     this.setState({ ready: true });
   }
@@ -39,7 +39,7 @@ export default class Offering extends Component {
           intent={err ? 'danger' : 'success'}
           icon={err ? 'error' : 'exchange'}
         >
-          {err ? 'The server is offline, but you can still settle existing swaps' : text}
+          {err || text}
         </Callout>
         <div className="columns">
           {!err && <OfferingTable {...this.state} contractAddress={contractAddress} />}
