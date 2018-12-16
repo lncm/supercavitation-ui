@@ -23,15 +23,11 @@ export function ecRecover(...args) {
   return web3.eth.personal.ecRecover(...args);
 }
 
-export async function initializeWeb3(mnemonic, err) {
-  // do a timeout
-  let done = false;
-  setTimeout(() => !done && err(), 2000);
+export async function initializeWeb3(mnemonic) {
   const provider = new HDWalletProvider(mnemonic, evmNode, 0, 1, false, derivationPath);
   provider.engine.stop();
   web3 = new Web3(provider);
   const address = await getAddress();
-  done = true;
   return { address };
 }
 
