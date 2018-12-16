@@ -95,7 +95,7 @@ export default class InvoiceProcessing extends Component {
       // if we already have the creationTx, we can just wait
       if (creationTx) { return null; }
       // we dont have a creation tx yet; show the qr code and wait for it...
-      const { miningTx } = await getStatus({ httpEndpoint, preImageHash, owner });
+      const { creationTx: miningTx } = await getStatus({ httpEndpoint, preImageHash, owner });
       return this.setState({ mining: true, miningTx, creationTx: miningTx });
     }
     return null;
