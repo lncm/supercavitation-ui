@@ -7,6 +7,7 @@ const table = [
   ['contract', 'Contract Address', ({ contractAddress: a }) => <ExplorerLink type="address" data={a} chars={16} />],
   ['owner', 'Contract Owner', ({ owner: a }) => <ExplorerLink type="address" data={a} chars={16} />],
   ['httpEndpoint', 'Server URL'],
+  ['lightningNode', 'Lightning Node', ({ lightningNode: l }) => <div className="scrollx">{l}</div>],
   ['version', 'Server Version'],
   ['timeLockBlocks', 'Time Lock Blocks'],
   ['minAmountSatoshis', 'Min Order (Satoshis)'],
