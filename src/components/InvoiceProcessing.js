@@ -65,19 +65,19 @@ export default class InvoiceProcessing extends Component {
     // always set the value + ready status (to hide the spinner)
     this.setState({ amount, ready: true });
     // state 'cancelled': we can stop now
-    if (state === '2') {
+    if (state === '3') {
       this.setState({ cancelled: true });
       return this.poller.stop();
     }
     // state 'completed': we can stop now
-    if (state === '1') {
+    if (state === '2') {
       this.setState({ completed: true });
       return this.poller.stop();
     }
     // the remaining logic deals with invoices, which we don't care about if bob is offline
     if (offline) { return null; }
     // stage 'created': we want to show the settle invoice and wait for it's tx to be mined
-    if (amount > '0') {
+    if (state === '1') {
       const { settleTx } = this.state;
       // if we already have the settleTx, we can just wait; the poller will update the state when it's mined...
       if (settleTx) { return null; }
