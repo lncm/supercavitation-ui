@@ -3,8 +3,6 @@ import HDWalletProvider from 'truffle-hdwallet-provider';
 import SwapOffering from '@lncm/supercavitation-contracts/build/contracts/SwapOffering.json';
 import { gas, gasPrice, evmNode, derivationPath, devServer } from '../config';
 
-console.log({ devServer });
-
 let web3;
 
 // cache contract composing

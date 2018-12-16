@@ -10,7 +10,7 @@ export default ({ settleTx, mining, miningTx }) => (
     icon={mining ? 'time' : 'link'}
   >
     <div>
-      {mining && !settleTx && <b>Bob is creating the swap!</b>}
+      {mining && !settleTx && <b>Swap is being created!</b>}
       {!mining && !settleTx && <div>The swap has been created; you can now safely pay the settlement invoice!</div>}
       {mining && settleTx && <b>The settlement has been published!</b>}
       {!mining && settleTx && <b>The swap is settled!</b>}
