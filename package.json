@@ -6,6 +6,7 @@
     "dev:ganache": "cross-env GANACHE=1 webpack-dev-server",
     "dev": "webpack-dev-server",
     "clean": "rm -rf dist",
+    "deploy": "gh-pages -d dist",
     "serve": "http-server dist -p 9000",
     "build": "npm run clean; cross-env NODE_ENV=production webpack --config webpack.production.config.js  --progress --profile --colors"
   },
@@ -16,6 +17,7 @@
     "@lncm/supercavitation-contracts": "^0.3.0",
     "babel-polyfill": "6.26.0",
     "cross-env": "5.2.0",
+    "gh-pages": "^2.0.1",
     "lightnode-invoice": "0.3.0",
     "prop-types": "15.6.2",
     "qrcode.react": "0.8.0",
