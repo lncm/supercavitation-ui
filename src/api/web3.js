@@ -1,7 +1,6 @@
 import Web3 from 'web3';
 import HDWalletProvider from 'truffle-hdwallet-provider';
 import SwapOffering from '@lncm/supercavitation-contracts/build/contracts/SwapOffering.json';
-
 import { gas, gasPrice, evmNode, derivationPath, devServer } from '../config';
 
 console.log({ devServer });
@@ -36,6 +35,9 @@ export async function initializeWeb3(mnemonic) {
 
 export async function getContractInfo(address) {
   if (!address) { throw new Error('Enter an Address'); }
+  const code = await web3.eth.getCode(address);
+  if (code === '0x00') { throw new Error(`No contract found at address ${address}`); }
+  if (SwapOffering.deployedBytecode !== code) { throw new Error('Contract code could not be verified'); }
   const contract = getContract(address);
   const [httpEndpoint, owner, lockedFunds, balance] = await Promise.all([
     devServer || contract.methods.url().call(),

@@ -18,7 +18,11 @@ export default class Offering extends Component {
   }
   async getContractInfo() {
     const { match: { params: { contractAddress } } } = this.props;
-    this.setState({ ...await getContractInfo(contractAddress) }, this.getHttpInfo);
+    try {
+      this.setState({ ...await getContractInfo(contractAddress) }, this.getHttpInfo);
+    } catch (err) {
+      this.setState({ err: err.message, ready: true });
+    }
   }
   async getHttpInfo() {
     const { httpEndpoint, owner } = this.state;
