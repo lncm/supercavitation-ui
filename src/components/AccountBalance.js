@@ -6,6 +6,11 @@ import { Web3ConnectionContext } from './Web3Connection';
 
 export default class AccountBalance extends Component {
   static contextType = Web3ConnectionContext;
+  constructor(props) {
+    super(props);
+    this.state = {}
+    this.getBalance = this.getBalance.bind(this);
+  }
   componentDidMount() {
     this.getBalance();
   }
