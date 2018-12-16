@@ -7,15 +7,12 @@
 //   devContractAddress = networks[Object.keys(networks).pop()].address;
 // }
 
-export const devMode = process.env.DEV;
-export const devServer = 'https://charlie.lncm.io';
-// export const devContract = devContractAddress;
+export const devServer = process.env.DEV_SERVER;
 
 export const appTitle = 'Supercavitation Swaps';
 
 export const explorerUrl = 'https://explorer.testnet.rsk.co';
 export const evmNode = process.env.GANACHE ? 'http://localhost:8545' : 'https://public-node.testnet.rsk.co';
-
 
 export const derivationPath = "m/44'/37310'/0'/0/";
 export const randomMnemonic = 'drama rescue intact royal denial oblige direct vendor market soda mandate accident';

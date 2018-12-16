@@ -6,6 +6,8 @@ const webpack = require('webpack');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
+console.log('dev server', process.env.DEV_SERVER);
+
 const config = {
   stats: {
     maxModules: 0,
@@ -131,7 +133,7 @@ const config = {
 
   plugins: [
     new HtmlWebpackPlugin({ template: 'index.html' }),
-    new webpack.DefinePlugin({ 'process.env': JSON.stringify({ GANACHE: process.env.GANACHE, DEV: process.env.DEV }) }),
+    new webpack.DefinePlugin({ 'process.env': JSON.stringify({ DEV_SERVER: process.env.DEV_SERVER }) }),
     new webpack.NamedModulesPlugin(),
     new webpack.LoaderOptionsPlugin({
       test: /\.jsx?$/,

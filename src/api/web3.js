@@ -2,7 +2,9 @@ import Web3 from 'web3';
 import HDWalletProvider from 'truffle-hdwallet-provider';
 import SwapOffering from '@lncm/supercavitation-contracts/build/contracts/SwapOffering.json';
 
-import { gas, gasPrice, evmNode, derivationPath, devMode, devServer } from '../config';
+import { gas, gasPrice, evmNode, derivationPath, devServer } from '../config';
+
+console.log({ devServer });
 
 let web3;
 
@@ -36,7 +38,7 @@ export async function getContractInfo(address) {
   if (!address) { throw new Error('Enter an Address'); }
   const contract = getContract(address);
   const [httpEndpoint, owner, lockedFunds, balance] = await Promise.all([
-    devMode ? devServer : contract.methods.url().call(),
+    devServer || contract.methods.url().call(),
     contract.methods.owner().call(),
     contract.methods.lockedFunds().call(),
     web3.eth.getBalance(address),
