@@ -25,9 +25,7 @@ export default class InvoiceFlow extends Component {
     }
     return (
       <div>
-        <div>
-          {!offline && <InvoiceNewInput onSubmit={this.onRequestNewInvoice} {...this.state} {...this.props} />}
-        </div>
+        {!offline && <div><InvoiceNewInput onSubmit={this.onRequestNewInvoice} {...this.state} {...this.props} /></div>}
         <div>
           <InvoiceExistingInput onPaste={this.onPasteExistingPreImage} />
         </div>
