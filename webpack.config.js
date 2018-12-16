@@ -6,7 +6,9 @@ const webpack = require('webpack');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-console.log('dev server', process.env.DEV_SERVER);
+const { env: { DEV_SERVER, DEV_CONTRACT, GANACHE } } = process;
+
+console.log('dev server', { DEV_SERVER, DEV_CONTRACT, GANACHE });
 
 const config = {
   stats: {
@@ -133,7 +135,7 @@ const config = {
 
   plugins: [
     new HtmlWebpackPlugin({ template: 'index.html' }),
-    new webpack.DefinePlugin({ 'process.env': JSON.stringify({ DEV_SERVER: process.env.DEV_SERVER }) }),
+    new webpack.DefinePlugin({ 'process.env': JSON.stringify({ DEV_SERVER, DEV_CONTRACT, GANACHE }) }),
     new webpack.NamedModulesPlugin(),
     new webpack.LoaderOptionsPlugin({
       test: /\.jsx?$/,

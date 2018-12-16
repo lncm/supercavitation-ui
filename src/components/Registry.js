@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { Callout, Button, Card } from '@blueprintjs/core';
+import { Callout, Card } from '@blueprintjs/core';
+
+import { devContract } from '../config';
 
 export default class Offering extends Component {
   render() {
@@ -9,6 +11,14 @@ export default class Offering extends Component {
         <Callout title="Welcome to Supercavitation Swap Demo">
           Here are some sample swap offering contracts. This page will pull the contract addresses from an on-chain registry.
         </Callout>
+        {devContract && (
+          <Card>
+            <h3>
+              <Link to={`/offering/${devContract}`}>Dev</Link>
+              <br />Dev Contract {devContract}
+            </h3>
+          </Card>
+        )}
         <Card>
           <h3>
             <Link to="/offering/0x8b3f82945f90e18cc235f829b59828d6ab4ad6e1">Bob</Link>
