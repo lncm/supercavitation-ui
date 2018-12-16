@@ -1,20 +1,30 @@
 import { getAddress, ecRecover } from './web3';
-import { decodeInvoice } from '../util';
+import { sha256, decodeInvoice } from '../util';
 
 async function fetchAndVerify(params, address) {
-  const json = await (await fetch(...params)).json();
-  if (json.error) { throw new Error(json.error); }
+  const payload = await (await fetch(...params)).json();
+  if (payload.error) { throw new Error(payload.error); }
   // quick and dirty match first
-  if (json.address.toLowerCase() !== address.toLowerCase()) {
-    throw new Error(`Address ${json.address} does not match contract owner ${address}`);
+  if (payload.address.toLowerCase() !== address.toLowerCase()) {
+    throw new Error(`Address ${payload.address} does not match contract owner ${address}`);
+  }
+  // verify the hash
+  const hash = await sha256(payload.data, 'utf8');
+  if (hash !== payload.hash) {
+    throw new Error('Payload hash does not match');
   }
   // verify the signature
-  const signer = await ecRecover(json.data, json.signature);
+  const signer = await ecRecover(hash, payload.signature);
   if (signer.toLowerCase() !== address.toLowerCase()) {
     throw new Error('Cannot verify owner signature!');
   }
+  // ensure it was signed within the last 10 seconds (to add some replay protection)
+  const parsed = JSON.parse(payload.data);
+  if ((new Date() - new Date(parsed.timestamp)) > 10 * 1000) {
+    throw new Error('Data was signed too long ago.');
+  }
   // return parsed json data
-  return JSON.parse(json.data);
+  return parsed.json;
 }
 
 const headers = {
@@ -37,6 +47,7 @@ export async function requestInvoices({ requestedAmountInSatoshis, contractAddre
   const data = { amount: requestedAmountInSatoshis, customer: await getAddress(), contract: contractAddress };
   const { paymentInvoice, depositInvoice, preImageHash } = await postData([`${httpEndpoint}/swap`, data], owner);
   // TODO, validate the returned invoice data against blockchain...
+  // TODO, validate that I am the recipient...
   const paymentInvoiceData = decodeInvoice(paymentInvoice);
   return {
     depositInvoice,
