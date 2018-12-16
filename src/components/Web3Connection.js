@@ -14,7 +14,7 @@ export default class Web3Connection extends Component {
     this.changeInput = this.changeInput.bind(this);
   }
   componentDidMount() {
-    this.generateMnemonic();
+    // this.generateMnemonic();
   }
   generateMnemonic() {
     this.setState({ mnemonic: randomMnemonic }, this.validateMnemonic);
