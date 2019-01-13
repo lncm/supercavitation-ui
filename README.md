@@ -1,5 +1,7 @@
 # Supercavitation UI
 
+** TECHNICAL DEMO ONLY DO NOT USE FOR SIGNIFICANT VALUE **
+
 This is the User Interface component of the [Supercavitations Swaps](https://github.com/lncm/supercavitation-swaps) service.
 
 It's a react web app that:
